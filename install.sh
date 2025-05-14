@@ -45,7 +45,7 @@ chmod +x *.sh
 # Lancer le script de mise à jour automatique si non lancé
 if ! pgrep -f "maj1.sh" > /dev/null; then
     horloge; echo -e "${yellow}Lancement du vérificateur de mise à jour...${reset}"
-    nohup bash scripts/autoupdate_loop.sh > /dev/null 2>&1 &
+    nohup bash main/maj1.sh> /dev/null 2>&1 &
 fi
 
 # Affichage du logo
