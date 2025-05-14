@@ -26,7 +26,8 @@ FOLLOW_SCRIPT_PATH = os.path.join(DATA_DIR, 'follow_action.py')
 LIKE_SCRIPT_PATH = os.path.join(DATA_DIR, 'like_action.py') 
 ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 
-os.makedirs(LOGS_DIR, exist_ok=True) os.makedirs(CONFIG_DIR, exist_ok=True)
+os.makedirs(LOGS_DIR, exist_ok=True) 
+os.makedirs(CONFIG_DIR, exist_ok=True)
 
 # Chargement de la config
 try: with open(CONFIG_PATH) as f: config = json.load(f) 
