@@ -61,7 +61,7 @@ menu() {
 
     case $choix in
         1)
-            bash scripts/maj1.sh
+            bash main/maj1.sh
             ;;
         2)
             echo -e "$(horloge)${CYAN}Autre action à définir...${RESET}"
