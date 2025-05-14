@@ -127,7 +127,7 @@ menu_principal() {
             ;;
         4)
             echo -e "${CYAN}Lancement d'une tâche manuellement...${RESET}"
-            [[ -f scripts/instagram_task.py ]] && python3 scripts/instagram_task.py
+            [[ -f main/introxt_Instagram.sh ]] && bash main/introxt_Instagram.sh 
             ;;
         5)
             echo -e "${CYAN}Mise à jour...${RESET}"
