@@ -11,12 +11,12 @@ from instagram_private_api import Client, ClientError, ClientCookieExpiredError,
 
 # === Chemins ===
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "config", "config1.json")
-SESSION_DIR = os.path.join(BASE_DIR, "sessions")
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "config1.json")
+SESSION_DIR = os.path.join(PROJECT_ROOT, "sessions")
 os.makedirs(SESSION_DIR, exist_ok=True)
 
 # === Fonctions sessions ===
-
 def generate_device_seed(username):
     seed = hashlib.md5(username.encode()).hexdigest()
     return {
