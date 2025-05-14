@@ -12,7 +12,7 @@ import pickle
 # === Chemins ===
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
-CONFIG_PATH = os.path.join(PROJECT_ROOT, "scripts", "config", "config1.json")
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "...", "config", "config1.json")
 SESSION_DIR = os.path.join(PROJECT_ROOT, "sessions")
 os.makedirs(SESSION_DIR, exist_ok=True)
 
