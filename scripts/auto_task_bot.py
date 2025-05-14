@@ -1,4 +1,12 @@
-import os import json import re import asyncio import subprocess import random import hashlib from datetime import datetime from telethon.sync import TelegramClient, events
+import os 
+import json 
+import re 
+import asyncio 
+import subprocess 
+import random 
+import hashlib 
+from datetime import datetime 
+from telethon.sync import TelegramClient, events
 
 == Style terminal ==
 
@@ -6,13 +14,26 @@ def color(text, code): return f"\033[{code}m{text}\033[0m" def horloge_prefix():
 
 == Répertoires ==
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(file)) PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..')) CONFIG_DIR = os.path.join(PROJECT_DIR, 'config') CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json') CONFIG1_PATH = os.path.join(CONFIG_DIR, 'config1.json') SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json') TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt') LOGS_DIR = os.path.join(SCRIPT_DIR, 'logs') DATA_DIR = os.path.join(SCRIPT_DIR, 'data') FOLLOW_SCRIPT_PATH = os.path.join(DATA_DIR, 'follow_action.py') LIKE_SCRIPT_PATH = os.path.join(DATA_DIR, 'like_action.py') ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(file)) 
+PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..')) 
+CONFIG_DIR = os.path.join(PROJECT_DIR, 'config') 
+CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json') 
+CONFIG1_PATH = os.path.join(CONFIG_DIR, 'config1.json') 
+SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json') 
+TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt') 
+LOGS_DIR = os.path.join(SCRIPT_DIR, 'logs') 
+DATA_DIR = os.path.join(SCRIPT_DIR, 'data') 
+FOLLOW_SCRIPT_PATH = os.path.join(DATA_DIR, 'follow_action.py') 
+LIKE_SCRIPT_PATH = os.path.join(DATA_DIR, 'like_action.py') 
+ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 
 os.makedirs(LOGS_DIR, exist_ok=True) os.makedirs(CONFIG_DIR, exist_ok=True)
 
 == Chargement de la config ==
 
-try: with open(CONFIG_PATH) as f: config = json.load(f) api_id = config["api_id"] api_hash = config["api_hash"]
+try: with open(CONFIG_PATH) as f: config = json.load(f) 
+    api_id = config["api_id"] 
+api_hash = config["api_hash"]
 
 with open(CONFIG1_PATH) as f:
     config1 = json.load(f)
@@ -31,7 +52,6 @@ def extraire_infos(message): lien_match = re.search(r'https://www\.instagram\.co
 == Logs ==
 
 def journaliser(message): date_str = datetime.now().strftime("%Y-%m-%d") timestamp = datetime.now().strftime("%H:%M:%S") log_file = os.path.join(LOGS_DIR, f"{date_str}.txt") with open(log_file, "a", encoding="utf-8") as f: f.write(f"[{timestamp}] {message}\n")
-
 def log_erreur(erreur): with open(ERROR_LOG_PATH, "a", encoding="utf-8") as f: f.write(f"[{datetime.now()}] {erreur}\n")
 
 == Envoyer tâche ==
@@ -40,7 +60,11 @@ async def envoyer_tache(): global utilisateur_actuel if utilisateur_actuel >= le
 
 == Exécuter action ==
 
-def executer_action(action): try: script_path = FOLLOW_SCRIPT_PATH if "follow" in action else LIKE_SCRIPT_PATH subprocess.run(["python3", script_path], check=True) except Exception as e: log_erreur(f"Erreur executer_action({action}) : {e}")
+def executer_action(action): 
+try: script_path = FOLLOW_SCRIPT_PATH 
+    if "follow" in action 
+    else LIKE_SCRIPT_PATH subprocess.run(["python3", script_path], check=True) 
+except Exception as e: log_erreur(f"Erreur executer_action({action}) : {e}")
 
 == Nettoyage ==
 
@@ -104,7 +128,10 @@ except Exception as e:
 
 == Main ==
 
-async def main(): try: await client.start() print(horloge_prefix() + color("[\u2713] Connect\u00e9 \u00e0 Telegram.", "1;32")) await envoyer_tache() await client.run_until_disconnected() except Exception as e: log_erreur(f"[main ERROR] {e}")
+async def main(): try: await client.start() 
+    print(horloge_prefix() + color("[\u2713] Connect\u00e9 \u00e0 Telegram.", "1;32")) 
+await envoyer_tache() await client.run_until_disconnected() 
+except Exception as e: log_erreur(f"[main ERROR] {e}")
 
 with client: client.loop.run_until_complete(main())
 
