@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import pickle
+from getpass import getpass
 from datetime import datetime
 from instagram_private_api import Client
 
@@ -31,7 +32,6 @@ def success(msg):
 def erreur(msg):
     print(f"{horloge()} {couleur(msg, '1;31')}")
 
-# Historique
 def enregistrer_historique(msg):
     os.makedirs(ACCOUNTS_DIR, exist_ok=True)
     with open(HISTORY_PATH, "a") as f:
@@ -61,19 +61,28 @@ def lire_utilisateurs_config():
             return []
     return data.get("utilisateurs", [])
 
-# Ajouter un compte
+# Ajouter un compte avec connexion et session
 def ajouter_compte(username, password):
     utilisateurs = lire_utilisateurs_config()
     if any(u["username"] == username for u in utilisateurs):
         erreur("Ce compte existe déjà.")
         return
-    utilisateurs.append({"username": username, "password": password})
-    with open(CONFIG1_PATH, "w") as f:
-        json.dump({"utilisateurs": utilisateurs}, f, indent=4)
-    success(f"Compte {username} ajouté.")
-    enregistrer_historique(f"[+] Ajout : {username}")
+    try:
+        info(f"Tentative de connexion à {username}...")
+        api = Client(username, password)
+        settings = api.settings
+        with open(os.path.join(SESSION_DIR, f"{username}.session"), "wb") as f:
+            pickle.dump(settings, f)
+        success(f"Session sauvegardée pour {username}.")
+        utilisateurs.append({"username": username, "password": password})
+        with open(CONFIG1_PATH, "w") as f:
+            json.dump({"utilisateurs": utilisateurs}, f, indent=4)
+        success(f"Compte {username} ajouté avec succès.")
+        enregistrer_historique(f"[+] Ajout : {username}")
+    except Exception as e:
+        erreur(f"Échec de connexion : {e}")
+        enregistrer_historique(f"[!] Échec ajout : {username} ({e})")
 
-# Supprimer un compte
 def supprimer_utilisateur_config(username):
     utilisateurs = lire_utilisateurs_config()
     utilisateurs = [u for u in utilisateurs if u["username"] != username]
@@ -82,7 +91,6 @@ def supprimer_utilisateur_config(username):
     success(f"{username} supprimé.")
     enregistrer_historique(f"[-] Suppression : {username}")
 
-# Lister les comptes
 def lister_comptes():
     utilisateurs = lire_utilisateurs_config()
     if not utilisateurs:
@@ -93,7 +101,6 @@ def lister_comptes():
         print(couleur(f"  {i}. {utilisateur['username']}", "1;37"))
     print(couleur("╚═══════════════════════════════════════════════════╝\n", '1;36'))
 
-# Tester une session
 def tester_session(username):
     path = os.path.join(SESSION_DIR, f"{username}.session")
     if not os.path.exists(path):
@@ -107,7 +114,6 @@ def tester_session(username):
     except Exception as e:
         erreur(f"Session invalide pour {username} : {e}")
 
-# Supprimer une session
 def supprimer_session(username):
     path = os.path.join(SESSION_DIR, f"{username}.session")
     if os.path.exists(path):
@@ -116,7 +122,6 @@ def supprimer_session(username):
     else:
         erreur(f"Aucune session trouvée pour {username}.")
 
-# Menu interactif
 def menu():
     while True:
         os.system("clear")
@@ -135,7 +140,7 @@ def menu():
 
         if choix == "1":
             username = input(couleur("  Nom d'utilisateur : ", "1;37")).strip()
-            password = input(couleur("  Mot de passe       : ", "1;37")).strip()
+            password = getpass(couleur("  Mot de passe       : ", "1;37")).strip()
             if username and password:
                 ajouter_compte(username, password)
             else:
@@ -214,7 +219,6 @@ def menu():
             erreur("Choix invalide.")
             input("Appuyez sur Entrée...")
 
-# Lancer le script
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         menu()
