@@ -11,7 +11,7 @@ from instagram_private_api import Client, ClientError, ClientCookieExpiredError,
 
 # === Chemins ===
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "config1.json")
+CONFIG_PATH = os.path.join(BASE_DIR, "config", "config1.json")
 SESSION_DIR = os.path.join(BASE_DIR, "sessions")
 os.makedirs(SESSION_DIR, exist_ok=True)
 
