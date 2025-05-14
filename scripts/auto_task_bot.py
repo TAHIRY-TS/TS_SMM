@@ -9,7 +9,8 @@ from datetime import datetime
 from telethon.sync import TelegramClient, events
 
 # Style terminal 
-def color(text, code): return f"\033[{code}m{text}\033[0m" def horloge_prefix(): return color(f"[TS {datetime.now().strftime('%H:%M')}]", "1;34") + " "
+def color(text, code): return f"\033[{code}m{text}\033[0m" 
+def horloge_prefix(): return color(f"[TS {datetime.now().strftime('%H:%M')}]", "1;34") + " "
 
 # Répertoires 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(file)) 
