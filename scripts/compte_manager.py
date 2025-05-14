@@ -73,7 +73,7 @@ def lister_comptes():
     print(f"\n{couleur('╔════════════════ LISTE DES COMPTES ════════════════╗', '1;36')}")
     for i, utilisateur in enumerate(utilisateurs, 1):
         print(couleur(f"  {i}. {utilisateur['username']}", "1;37"))
-    print(couleur("╚════════════════════════════════════════════════════╝\n", '1;36'))
+    print(couleur("╚═══════════════════════════════════════════════════╝\n", '1;36'))
 
 # Menu interactif
 def menu():
