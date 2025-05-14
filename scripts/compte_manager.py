@@ -61,7 +61,6 @@ def lire_utilisateurs_config():
             return []
     return data.get("utilisateurs", [])
 
-# Ajouter un compte avec connexion et session
 def ajouter_compte(username, password):
     utilisateurs = lire_utilisateurs_config()
     if any(u["username"] == username for u in utilisateurs):
@@ -80,8 +79,27 @@ def ajouter_compte(username, password):
         success(f"Compte {username} ajouté avec succès.")
         enregistrer_historique(f"[+] Ajout : {username}")
     except Exception as e:
-        erreur(f"Échec de connexion : {e}")
-        enregistrer_historique(f"[!] Échec ajout : {username} ({e})")
+        if 'checkpoint_required' in str(e):
+            erreur("Checkpoint requis. Veuillez vérifier le compte manuellement.")
+            print(f"{couleur('>> Connectez-vous à Instagram via navigateur et validez le checkpoint :', '1;33')}")
+            print(f"{couleur(f'https://www.instagram.com/accounts/login/', '1;36')}")
+            input("\nAppuyez sur Entrée une fois le checkpoint validé...")
+            try:
+                api = Client(username, password)
+                settings = api.settings
+                with open(os.path.join(SESSION_DIR, f"{username}.session"), "wb") as f:
+                    pickle.dump(settings, f)
+                success(f"Session re-sauvegardée après validation du checkpoint pour {username}.")
+                utilisateurs.append({"username": username, "password": password})
+                with open(CONFIG1_PATH, "w") as f:
+                    json.dump({"utilisateurs": utilisateurs}, f, indent=4)
+                enregistrer_historique(f"[+] Ajout (après checkpoint) : {username}")
+            except Exception as e2:
+                erreur(f"Échec après checkpoint : {e2}")
+                enregistrer_historique(f"[!] Échec après checkpoint : {username} ({e2})")
+        else:
+            erreur(f"Échec de connexion : {e}")
+            enregistrer_historique(f"[!] Échec ajout : {username} ({e})")
 
 def supprimer_utilisateur_config(username):
     utilisateurs = lire_utilisateurs_config()
