@@ -58,6 +58,8 @@ fi
 horloge; echo -e "${green}Installation terminée.${reset}"
 echo 'bash ~/TS-smm/main/maj1.sh' >> ~/.bashrc
 # Lancement du script principal
+chmod +x *.sh
+chmod +x *.py
 if [ -f start.sh ]; then
     horloge; echo -e "${yellow}Lancement de l'application...${reset}"
     bash start.sh
