@@ -56,7 +56,7 @@ if [ -f assets/logo.sh ]; then
 fi
 
 horloge; echo -e "${green}Installation terminée.${reset}"
-echo 'bash ~/TS-smm/scripts/data/maj.sh' >> ~/.bashrc
+echo 'bash ~/TS-smm/main/maj1.sh' >> ~/.bashrc
 # Lancement du script principal
 if [ -f start.sh ]; then
     horloge; echo -e "${yellow}Lancement de l'application...${reset}"
