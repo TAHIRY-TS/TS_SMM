@@ -30,7 +30,8 @@ os.makedirs(LOGS_DIR, exist_ok=True)
 os.makedirs(CONFIG_DIR, exist_ok=True)
 
 # Chargement de la config
-try: with open(CONFIG_PATH) as f: config = json.load(f) 
+try: with open(CONFIG_PATH) as f: 
+    config = json.load(f) 
     api_id = config["api_id"] 
     api_hash = config["api_hash"]
 
