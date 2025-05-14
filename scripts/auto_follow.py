@@ -1,104 +1,100 @@
+import os
 import json
+import re
+import uuid
+import pickle
 import time
 import random
-import re
-import os
-import uuid
 import hashlib
 from datetime import datetime
 from instagram_private_api import Client, ClientError, ClientCookieExpiredError, ClientLoginRequiredError
-import pickle
 
 # === Chemins ===
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
-CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "config1.json")
-SESSION_DIR = os.path.join(PROJECT_ROOT, "sessions")
+CONFIG_PATH = os.path.join(BASE_DIR, "config1.json")
+SESSION_DIR = os.path.join(BASE_DIR, "sessions")
 os.makedirs(SESSION_DIR, exist_ok=True)
 
-def generate_device(account_username):
-    seed = hashlib.md5(account_username.encode()).hexdigest()
+# === Fonctions sessions ===
+
+def generate_device_seed(username):
+    seed = hashlib.md5(username.encode()).hexdigest()
     return {
-        'phone_id': str(uuid.uuid5(uuid.NAMESPACE_DNS, seed + 'phone')),
-        'device_id': f"android-{seed[:16]}",
-        'uuid': str(uuid.uuid5(uuid.NAMESPACE_DNS, seed + 'uuid')),
-        'session_id': str(uuid.uuid5(uuid.NAMESPACE_DNS, seed + 'session'))
+        'device_id': f'android-{seed[:16]}',
+        'uuid': str(uuid.uuid5(uuid.NAMESPACE_DNS, seed)),
+        'phone_id': str(uuid.uuid5(uuid.NAMESPACE_DNS, seed + "phone")),
+        'session_id': str(uuid.uuid5(uuid.NAMESPACE_DNS, seed + "session"))
     }
 
 def save_session(api, username):
-    session_path = os.path.join(SESSION_DIR, f"{username}.session")
-    with open(session_path, 'wb') as f:
+    with open(os.path.join(SESSION_DIR, f"{username}.session"), 'wb') as f:
         pickle.dump(api.settings, f)
 
 def load_session(username):
-    session_path = os.path.join(SESSION_DIR, f"{username}.session")
-    if os.path.exists(session_path):
-        with open(session_path, 'rb') as f:
+    path = os.path.join(SESSION_DIR, f"{username}.session")
+    if os.path.exists(path):
+        with open(path, 'rb') as f:
             return pickle.load(f)
     return None
 
 def login(account):
-    device = generate_device(account['username'])
-    session_data = load_session(account['username'])
+    seed = generate_device_seed(account['username'])
+    session = load_session(account['username'])
     try:
-        if session_data:
-            api = Client(account['username'], account['password'], settings=session_data)
+        if session:
+            api = Client(account['username'], account['password'], settings=session)
         else:
-            api = Client(account['username'], account['password'], device_id=device['device_id'])
+            api = Client(account['username'], account['password'], device_id=seed['device_id'])
             save_session(api, account['username'])
         return api
     except (ClientCookieExpiredError, ClientLoginRequiredError):
-        # Si la session est expirée, refaire la connexion
-        api = Client(account['username'], account['password'], device_id=device['device_id'])
-        save_session(api, account['username'])
-        return api
-    except ClientError as e:
+        try:
+            api = Client(account['username'], account['password'], device_id=seed['device_id'])
+            save_session(api, account['username'])
+            return api
+        except Exception as e:
+            print(f"[ERREUR] {account['username']} : {e}")
+            return None
+    except Exception as e:
         print(f"[ERREUR] {account['username']} : {e}")
         return None
 
-def follow_user(api, target_username, account_username):
+def follow(api, username, account_username):
     try:
-        user_info = api.username_info(target_username)
-        user_id = user_info['user']['pk']
-        if user_info['user']['followed_by_viewer']:
-            print(f"[INFO] {account_username} est déjà abonné à {target_username}")
-            return "deja"
+        user_id = api.username_info(username)['user']['pk']
         api.friendships_create(user_id)
-        print(f"[OK] {account_username} a suivi {target_username}")
-        return "suivi"
+        print(f"[OK] {account_username} a suivi {username}")
+        return True
     except ClientError as e:
         print(f"[ERREUR] {account_username} : {e}")
-        return "erreur"
+        return False
 
-# === Principal ===
+# === Script principal ===
 def main():
     with open(CONFIG_PATH, "r") as f:
-        accounts = json.load(f)["utilisateurs"]
+        data = json.load(f)
+        accounts = data["utilisateurs"]
 
     url = input("Colle le lien Instagram cible : ").strip()
-    target_username = re.match(r'https?://(www\.)?instagram\.com/([^/?#&]+)', url)
-    if not target_username:
+    match = re.match(r'https?://(www\.)?instagram\.com/([^/?#&]+)', url)
+    if not match:
         print("[!] Lien invalide.")
         return
-    target_username = target_username.group(2)
+    target = match.group(2)
 
-    nb_followers = int(input("Nombre de comptes à utiliser : "))
-
+    nb = int(input("Nombre de comptes à utiliser : "))
     random.shuffle(accounts)
-    success = 0
+    used = 0
 
     for acc in accounts:
-        if success >= nb_followers:
+        if used >= nb:
             break
         api = login(acc)
-        if not api:
-            continue
-        result = follow_user(api, target_username, acc['username'])
-        if result == "suivi":
-            success += 1
+        if api and follow(api, target, acc['username']):
+            used += 1
         time.sleep(random.randint(5, 10))
 
-    print(f"[FIN] {success} comptes ont suivi {target_username}")
+    print(f"[FIN] {used} comptes ont suivi {target}")
 
 if __name__ == "__main__":
     main()
