@@ -73,7 +73,7 @@ def follow_user(api, target_username, account_username):
 # === Principal ===
 def main():
     with open(CONFIG_PATH, "r") as f:
-        accounts = json.load(f)["utilisateur"]
+        accounts = json.load(f)["utilisateurs"]
 
     url = input("Colle le lien Instagram cible : ").strip()
     target_username = re.match(r'https?://(www\.)?instagram\.com/([^/?#&]+)', url)
