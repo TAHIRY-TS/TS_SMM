@@ -119,7 +119,7 @@ menu_principal() {
 
         2)
             echo -e "${CYAN}Gestion de compte Instagram...${RESET}"
-            [[ -f scripts/compte_manager.sh ]] && bash scripts/compte_managersh
+            [[ -f scripts/compte_manager.py ]] && python3 scripts/compte_manager.py
             ;;
         3)
             echo -e "${CYAN}Lancement de l'autoclick SMM...${RESET}"
@@ -131,7 +131,7 @@ menu_principal() {
             ;;
         5)
             echo -e "${CYAN}Mise à jour...${RESET}"
-            [[ -f iv.sh ]] && bash iv.sh
+            [[ -f main/iv.sh ]] && bash main/iv.sh
             ;;
         10)
             echo -e "${CYAN}Attendez...${RESET}"
