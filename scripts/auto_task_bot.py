@@ -8,12 +8,10 @@ import hashlib
 from datetime import datetime 
 from telethon.sync import TelegramClient, events
 
-== Style terminal ==
-
+# Style terminal 
 def color(text, code): return f"\033[{code}m{text}\033[0m" def horloge_prefix(): return color(f"[TS {datetime.now().strftime('%H:%M')}]", "1;34") + " "
 
-== Répertoires ==
-
+# Répertoires 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(file)) 
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..')) 
 CONFIG_DIR = os.path.join(PROJECT_DIR, 'config') 
@@ -29,11 +27,10 @@ ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 
 os.makedirs(LOGS_DIR, exist_ok=True) os.makedirs(CONFIG_DIR, exist_ok=True)
 
-== Chargement de la config ==
-
+# Chargement de la config
 try: with open(CONFIG_PATH) as f: config = json.load(f) 
     api_id = config["api_id"] 
-api_hash = config["api_hash"]
+    api_hash = config["api_hash"]
 
 with open(CONFIG1_PATH) as f:
     config1 = json.load(f)
@@ -45,35 +42,32 @@ except Exception as e: with open(ERROR_LOG_PATH, "a") as f: f.write(f"[CONFIG ER
 
 client = TelegramClient("session_smmkingdom", api_id, api_hash) utilisateur_actuel = 0
 
-== Extraction des infos ==
+# Extraction des infos 
+def extraire_infos(message): lien_match = re.search(r'https://www\.instagram\.com/([a-zA-Z0-9_.]+)/', message) action_match = re.search(r'Action\s*:\s*(Follow|Like)', message, re.IGNORECASE) 
+if lien_match and action_match: username = lien_match.group(1) action = action_match.group(1).strip().lower() 
+return username, lien_match.group(0), action 
+return None, None, None
 
-def extraire_infos(message): lien_match = re.search(r'https://www\.instagram\.com/([a-zA-Z0-9_.]+)/', message) action_match = re.search(r'Action\s*:\s*(Follow|Like)', message, re.IGNORECASE) if lien_match and action_match: username = lien_match.group(1) action = action_match.group(1).strip().lower() return username, lien_match.group(0), action return None, None, None
-
-== Logs ==
-
+# Logs
 def journaliser(message): date_str = datetime.now().strftime("%Y-%m-%d") timestamp = datetime.now().strftime("%H:%M:%S") log_file = os.path.join(LOGS_DIR, f"{date_str}.txt") with open(log_file, "a", encoding="utf-8") as f: f.write(f"[{timestamp}] {message}\n")
 def log_erreur(erreur): with open(ERROR_LOG_PATH, "a", encoding="utf-8") as f: f.write(f"[{datetime.now()}] {erreur}\n")
 
-== Envoyer tâche ==
-
+# Envoyer tâche
 async def envoyer_tache(): global utilisateur_actuel if utilisateur_actuel >= len(utilisateurs): utilisateur_actuel = 0 await asyncio.sleep(random.randint(min_delay, max_delay)) try: await client.send_message("SmmKingdomTasksBot", "\ud83d\udcddTasks\ud83d\udcdd") except Exception as e: log_erreur(f"Erreur envoi \ud83d\udcddTasks\ud83d\udcdd : {e}")
 
-== Exécuter action ==
-
+# Exécuter action
 def executer_action(action): 
 try: script_path = FOLLOW_SCRIPT_PATH 
     if "follow" in action 
     else LIKE_SCRIPT_PATH subprocess.run(["python3", script_path], check=True) 
 except Exception as e: log_erreur(f"Erreur executer_action({action}) : {e}")
 
-== Nettoyage ==
-
+# Nettoyage
 async def nettoyage_fichiers(): for path in [TASK_FILE_PATH, SELECTED_USER_PATH]: try: with open(path, "w") as f: pass except Exception as e: log_erreur(f"[Nettoyage fichier {path}] {e}")
 
-== Gestion des messages ==
-
-@client.on(events.NewMessage(from_users="SmmKingdomTasksBot")) async def handle_message(event): try: message = event.message.message.strip() journaliser(message)
-
+# Gestion des messages
+@client.on(events.NewMessage(from_users="SmmKingdomTasksBot")) 
+async def handle_message(event): try: message = event.message.message.strip() journaliser(message)
 if "My Balance" in message:
         match = re.search(r"My Balance\\s*:\\s*\\*\\*(\\d+(\\.\\d+)?)\\s*cashCoins", message)
         if match:
@@ -126,8 +120,7 @@ if "My Balance" in message:
 except Exception as e:
     log_erreur(f"[handle_message ERROR] {e}")
 
-== Main ==
-
+# Main
 async def main(): try: await client.start() 
     print(horloge_prefix() + color("[\u2713] Connect\u00e9 \u00e0 Telegram.", "1;32")) 
 await envoyer_tache() await client.run_until_disconnected() 
