@@ -7,7 +7,7 @@ from cryptography.fernet import Fernet
 
 # Dossiers & chemins
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG1_PATH = os.path.join(BASE_DIR, "config", "config1.json")
+CONFIG1_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'config1.json'))
 ACCOUNTS_DIR = os.path.join(BASE_DIR, "accounts")
 HISTORY_PATH = os.path.join(ACCOUNTS_DIR, "history.log")
 
