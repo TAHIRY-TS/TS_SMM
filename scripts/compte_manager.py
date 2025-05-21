@@ -157,8 +157,6 @@ def get_android_device_info():
         "timezone_offset": timezone_offset
     }
 
- return config_data
-
 def creer_config():
     clear()
     titre_section("AJOUTER UN COMPTE")
