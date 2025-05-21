@@ -44,7 +44,7 @@ ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(LOGS_DIR, exist_ok=True)
 
-# ---------- Chargement ou Connexion ----------
+# ---------- Connexion et Sauvegarde ----------
 def se_connecter_et_sauvegarder(api_id, api_hash, phone):
     try:
         with TelegramClient(StringSession(), api_id, api_hash) as client:
@@ -62,7 +62,7 @@ def se_connecter_et_sauvegarder(api_id, api_hash, phone):
         print(f"{horloge()} Erreur de connexion : {e}")
         exit()
 
-# ---------- Lecture Config et Initialisation Client ----------
+# ---------- Lecture Config avec lien automatique ----------
 try:
     with open(CONFIG_PATH) as f:
         config = json.load(f)
@@ -71,6 +71,17 @@ try:
         session_str = config["session"]
 except:
     print(f"{horloge()} Aucune session valide. Connexion requise.")
+    print(f"{horloge()} Ouverture de la page Telegram pour obtenir vos identifiants API...")
+
+    try:
+        subprocess.run(["termux-open-url", "https://my.telegram.org"], check=True)
+    except:
+        try:
+            subprocess.run(["xdg-open", "https://my.telegram.org"], check=True)
+        except Exception as e:
+            print(f"{horloge()} Impossible d'ouvrir automatiquement : {e}")
+            print(f"{horloge()} Veuillez ouvrir manuellement : https://my.telegram.org")
+
     api_id = int(input(f"{horloge()} Entrez API ID : "))
     api_hash = input(f"{horloge()} Entrez API HASH : ")
     phone = input(f"{horloge()} Entrez numéro de téléphone : ")
@@ -79,6 +90,8 @@ except:
     with open(CONFIG_PATH) as f:
         config = json.load(f)
         session_str = config["session"]
+    api_id = config["api_id"]
+    api_hash = config["api_hash"]
 
 # ---------- Initialisation Client ----------
 client = TelegramClient(StringSession(session_str), api_id, api_hash)
