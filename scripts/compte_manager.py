@@ -73,9 +73,9 @@ def get_prop(prop):
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
     except Exception:
         return None
-
+        
 def check_cmd(cmd):
-    return subprocess.call(['which', cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+    return shutil.which(cmd) is not None
 
 def get_android_device_info():
     # Résolution écran
