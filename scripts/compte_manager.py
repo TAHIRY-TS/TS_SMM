@@ -140,9 +140,9 @@ def get_android_device_info():
         "device_settings": device_settings,
         "config": config,
         "user_agent": user_agent,
-        "country": get_prop("persist.sys.country") or "FR",
+        "country": get_prop("persist.sys.country") or get_prop("ro.product.locale.region") or "FR",
         "country_code": 261,
-        "locale": get_prop("persist.sys.locale") or "fr_FR",
+        "locale": get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}" or "fr_FR",
         "timezone_offset": timezone_offset
     }
 
