@@ -8,7 +8,7 @@ import hashlib
 from datetime import datetime
 from telethon.sync import TelegramClient, events
 
-# Style terminal
+# Terminal style
 def color(text, code):
     return f"\033[{code}m{text}\033[0m"
 
@@ -32,7 +32,7 @@ ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 os.makedirs(LOGS_DIR, exist_ok=True)
 os.makedirs(CONFIG_DIR, exist_ok=True)
 
-# Chargement de la config
+# Chargement des configurations
 try:
     with open(CONFIG_PATH) as f:
         config = json.load(f)
@@ -41,7 +41,6 @@ try:
 
     with open(CONFIG1_PATH) as f:
         config1 = json.load(f)
-        utilisateurs = config1.get("utilisateurs", [])
         min_delay = config1.get("min_delay", 5)
         max_delay = config1.get("max_delay", 15)
 
@@ -50,8 +49,26 @@ except Exception as e:
         f.write(f"[CONFIG ERROR] {datetime.now()} - {e}\n")
     raise SystemExit("[❌] Erreur lors du chargement des configs.")
 
-client = TelegramClient("session_smmkingdom", api_id, api_hash)
+# Détection automatique des utilisateurs depuis les fichiers JSON dans config/
+def charger_utilisateurs():
+    users = []
+    for fichier in os.listdir(CONFIG_DIR):
+        if fichier.endswith(".json") and fichier not in ["config.json", "config1.json", "selected_user.json"]:
+            chemin = os.path.join(CONFIG_DIR, fichier)
+            try:
+                with open(chemin) as f:
+                    data = json.load(f)
+                    if "username" in data:
+                        users.append({"username": data["username"]})
+            except Exception as e:
+                with open(ERROR_LOG_PATH, "a") as err:
+                    err.write(f"[UTILISATEUR LOAD ERROR] {fichier} : {e}\n")
+    return users
+
+utilisateurs = charger_utilisateurs()
 utilisateur_actuel = 0
+
+client = TelegramClient("session_smmkingdom", api_id, api_hash)
 
 # Extraction des infos
 def extraire_infos(message):
@@ -106,6 +123,7 @@ async def nettoyage_fichiers():
 # Gestion des messages
 @client.on(events.NewMessage(from_users="SmmKingdomTasksBot"))
 async def handle_message(event):
+    global utilisateur_actuel
     try:
         message = event.message.message.strip()
         journaliser(message)
@@ -135,7 +153,6 @@ async def handle_message(event):
             "Please choose account",
             "username for tasks"
         ]):
-            global utilisateur_actuel
             if utilisateur_actuel >= len(utilisateurs):
                 utilisateur_actuel = 0
             user = utilisateurs[utilisateur_actuel]["username"]
