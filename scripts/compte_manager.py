@@ -228,14 +228,13 @@ def main_menu():
         print("\n\033[1;36m╔═════════════════════════════════════════╗\033[0m\n")
         print("\n\033[1;36m|           GESTION DE COMPTES             |\033[0m")
         print("\033[1;36m╚═════════════════════════════════════════╝\033[0m\n")
-
+    
 1. Ajouter un compte
 2. Tester les comptes
 3. Supprimer un compte
 4. Lister les comptes
 5. Extraire session
 0. Quitter
-""")
         choix = input("Choix: ")
         if choix == '1':
             add_account()
