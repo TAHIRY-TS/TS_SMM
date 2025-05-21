@@ -40,12 +40,6 @@ def get_prop(prop):
     except Exception:
         return ''
 
-def get_output(cmd):
-    try:
-        return subprocess.check_output(cmd, shell=True, encoding='utf-8').strip()
-    except Exception:
-        return ''
-
 def get_android_device_info():
     try:
         screen_size = subprocess.check_output(['wm', 'size'], encoding='utf-8').strip().split()[-1]
@@ -89,8 +83,8 @@ def generate_device_profile():
     fingerprint = get_prop("ro.build.fingerprint") or "UnknownFingerprint"
     build_id = get_prop("ro.build.id") or "UnknownBuildID"
     build_tags = info_device['build_tags'] or "UnknownBuildTags"
-    resolution = info_device['screen_resolution'] or "1080x1920"
-    dpi = info_device['screen_density'] or "420"
+    resolution = info_device['screen_resolution']
+    dpi = info_device['screen_density']
 
     return {
         "device_settings": {
@@ -112,7 +106,7 @@ def generate_device_profile():
             "radio_version": "MODEM 228",
             "build_id": build_id,
             "build_tags": build_tags,
-            "build_type": info_device['build_type'] or "user",
+            "build_type": info_device['build_type'],
             "country": info_device['country'],
             "country_code": int(info_device['country_code']) if info_device['country_code'].isdigit() else 261,
             "locale": info_device['locale'],
@@ -172,10 +166,8 @@ def add_account():
     login_account(username, password)
 
 def test_accounts():
-    files = os.listdir(CONFIG_DIR)
+    files = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
     for file in files:
-        if not file.endswith('.json'):
-            continue
         with open(os.path.join(CONFIG_DIR, file), 'r') as f:
             data = json.load(f)
         username = data.get('username')
@@ -225,33 +217,27 @@ def extract_session(username):
 
 def main_menu():
     while True:
-        print("\n\033[1;36m╔═════════════════════════════════════════╗\033[0m\n")
-        print("\n\033[1;36m|           GESTION DE COMPTES             |\033[0m")
-        print("\033[1;36m╚═════════════════════════════════════════╝\033[0m\n")
-    
-1. Ajouter un compte
-2. Tester les comptes
-3. Supprimer un compte
-4. Lister les comptes
-5. Extraire session
-0. Quitter
+        print("\n\033[1;36m╔═════════════════════════════════════════╗\033[0m")
+        print("\033[1;36m|           GESTION DE COMPTES           |\033[0m")
+        print("\033[1;36m╚═════════════════════════════════════════╝\033[0m")
+        print("1. Ajouter un compte")
+        print("2. Tester les comptes")
+        print("3. Supprimer un compte")
+        print("4. Lister les comptes")
+        print("5. Extraire session")
+        print("0. Quitter")
         choix = input("Choix: ")
         if choix == '1':
             add_account()
-            os.system('clear')
         elif choix == '2':
             test_accounts()
-            os.system('clear')
         elif choix == '3':
             delete_account()
-            os.system('clear')
         elif choix == '4':
             list_accounts()
-            os.system('clear')
         elif choix == '5':
             username = input("Nom d'utilisateur: ")
             extract_session(username)
-            os.system('clear')
         elif choix == '0':
             break
         else:
