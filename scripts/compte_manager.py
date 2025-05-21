@@ -3,6 +3,7 @@
 
 import os
 import json
+import shutil
 import uuid
 import subprocess
 import re
@@ -28,12 +29,19 @@ def titre_section(titre):
         subprocess.call(['bash', LOGO_PATH])
     else:
         print("\033[1;33m[AVERTISSEMENT]\033[0m Logo non trouvé.")
+
     titre_formate = f" {titre.upper()} "
     largeur = 50
-    print(f"\n\033[1;35m╔{'═' * largeur}╗\033[0m")
-    print(f"\033[1;35m║{titre_formate.center(largeur)}║\033[0m")
-    print(f"\033[1;35m╚{'═' * largeur}╝\033[0m\n")
 
+    # Obtenir la largeur du terminal
+    terminal_width = shutil.get_terminal_size().columns
+    # Calcul du décalage horizontal
+    padding = max((terminal_width - largeur) // 2, 0)
+    spaces = ' ' * padding
+
+    print(f"\n{spaces}\033[1;35m╔{'═' * largeur}╗\033[0m")
+    print(f"{spaces}\033[1;35m║{titre_formate.center(largeur)}║\033[0m")
+    print(f"{spaces}\033[1;35m╚{'═' * largeur}╝\033[0m\n")
 
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
