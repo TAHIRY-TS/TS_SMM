@@ -30,10 +30,7 @@ def titre_section(titre):
 
     titre_formate = f" {titre.upper()} "
     largeur = 50
-
-    # Obtenir la largeur du terminal
     terminal_width = shutil.get_terminal_size().columns
-    # Calcul du décalage horizontal
     padding = max((terminal_width - largeur) // 2, 0)
     spaces = ' ' * padding
 
@@ -73,12 +70,8 @@ def get_prop(prop):
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
     except Exception:
         return None
-        
-def check_cmd(cmd):
-    return shutil.which(cmd) is not None
 
 def get_android_device_info():
-    # Résolution écran
     screen_size = '1080x1920'
     density = '420'
     if check_cmd('wm'):
@@ -87,7 +80,6 @@ def get_android_device_info():
         except Exception:
             pass
 
-    # Densité (dpi)
     if check_cmd('dumpsys'):
         try:
             dpi_output = subprocess.check_output(['dumpsys', 'display'], encoding='utf-8')
@@ -96,10 +88,8 @@ def get_android_device_info():
         except Exception:
             pass
 
-    # Décalage horaire en secondes
     timezone_offset = int(datetime.now(timezone.utc).astimezone().utcoffset().total_seconds())
 
-    # UUIDs
     uuids = {
         "phone_id": str(uuid.uuid4()),
         "uuid": str(uuid.uuid4()),
@@ -110,7 +100,6 @@ def get_android_device_info():
         "tray_session_id": str(uuid.uuid4())
     }
 
-    # Informations appareil
     device = {
         "manufacturer": get_prop("ro.product.manufacturer"),
         "model": get_prop("ro.product.model"),
@@ -132,23 +121,10 @@ def get_android_device_info():
         "build_type": get_prop("ro.build.type")
     }
 
-    # User agent simulé
     user_agent = f"Instagram 269.0.0.18.75 Android ({device['android_version']}/{device['android_release']}; {device['dpi']}dpi; {device['resolution']}; {device['brand']}; {device['model']}; {device['device']}; en_US)"
 
-    # Données finales
-    config_data = {
-        "username": "username",
-        "password": "password",
+    return {
         "uuids": uuids,
-        "mid": str(uuid.uuid4().hex[:30]),
-        "ig_u_rur": None,
-        "ig_www_claim": "0",
-        "authorization_data": {
-            "ds_user_id": "0000000000000000",
-            "sessionid": "0000000000%3AXYZ123%3A8%3AABC"
-        },
-        "cookies": {},
-        "last_login": datetime.now().timestamp(),
         "device_settings": device,
         "user_agent": user_agent,
         "country": get_prop("persist.sys.country") or "FR",
@@ -176,13 +152,20 @@ def creer_config():
         safe_input("\nAppuyez sur Entrée pour continuer...")
         return
 
-    device_info = get_android_device_info()
+    info_data = get_android_device_info()
 
     profile = {
         "username": username,
         "password": password,
         "uuid": str(uuid.uuid4()),
-        "device_info": device_info
+        "device_info": info_data["device_settings"],
+        "uuids": info_data["uuids"],
+        "user_agent": info_data["user_agent"],
+        "country": info_data["country"],
+        "country_code": info_data["country_code"],
+        "locale": info_data["locale"],
+        "timezone_offset": info_data["timezone_offset"],
+        "last_login": datetime.now().timestamp()
     }
 
     with open(filepath, 'w') as f:
@@ -191,7 +174,6 @@ def creer_config():
     success(f"\nProfil enregistré pour {username}.")
     log_action("créé", username)
     safe_input("\nAppuyez sur Entrée pour revenir au menu...")
-
 
 def supprimer_compte():
     clear()
@@ -218,7 +200,6 @@ def supprimer_compte():
     log_action("supprimé", username)
     safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
-
 def lister_comptes():
     clear()
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
@@ -233,7 +214,6 @@ def lister_comptes():
 
     safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
-
 def nettoyer_sessions_orphelines():
     clear()
     titre_section("NETTOYAGE DES SESSIONS ORPHELINES")
@@ -242,7 +222,6 @@ def nettoyer_sessions_orphelines():
     sessions = [f for f in os.listdir(SESSION_DIR) if f.endswith('_session.json')]
 
     supprimés = 0
-
     for session_file in sessions:
         username = session_file.replace('_session.json', '')
         if username not in configs:
@@ -259,7 +238,6 @@ def nettoyer_sessions_orphelines():
         info("\nAucune session orpheline.")
 
     safe_input("\nAppuyez sur Entrée pour revenir au menu...")
-
 
 def menu():
     while True:
@@ -288,9 +266,8 @@ def menu():
             erreur("\nChoix invalide.")
             safe_input("\nAppuyez sur Entrée...")
 
-
 if __name__ == "__main__":
     try:
         menu()
     except KeyboardInterrupt:
-        print("\n\n\033[1;33mInterruption par utilisateur. Fermeture...\033[0m")
+        print("\nArrêté par l'utilisateur.")
