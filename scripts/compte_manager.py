@@ -162,8 +162,8 @@ def menu():
         print("2. Supprimer un compte")
         print("3. Lister les comptes")
         print("4. Nettoyer les sessions orphelines")
-        print("0. Quitter/n")
-        choix = input("Choix: ").strip()
+        print("0. Quitter")
+        choix = input("\nChoix: ").strip()
 
         if choix == "1":
             creer_config()
