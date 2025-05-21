@@ -34,7 +34,9 @@ PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR))
 CONFIG_DIR = os.path.join(PROJECT_DIR, 'config')
 LOGS_DIR = os.path.join(SCRIPT_DIR, 'logs')
 DATA_DIR = os.path.join(SCRIPT_DIR, 'data')
-CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json')
+
+# config.json est maintenant stocké à la racine du projet
+CONFIG_PATH = os.path.join(PROJECT_DIR, 'config.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
 FOLLOW_SCRIPT_PATH = os.path.join(DATA_DIR, 'follow_action.py')
@@ -100,7 +102,7 @@ client = TelegramClient(StringSession(session_str), api_id, api_hash)
 def charger_utilisateurs():
     utilisateurs = []
     for fichier in os.listdir(CONFIG_DIR):
-        if fichier.endswith(".json") and fichier not in ["config.json", "selected_user.json", "task_data.txt"]:
+        if fichier.endswith(".json") and fichier not in ["selected_user.json", "task_data.txt"]:
             chemin = os.path.join(CONFIG_DIR, fichier)
             try:
                 with open(chemin, encoding="utf-8") as f:
