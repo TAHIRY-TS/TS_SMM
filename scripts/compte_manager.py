@@ -39,6 +39,34 @@ def creer_profil_json(username, password):
         erreur("Ce compte existe déjà.")
         return
 
+    # Détection dynamique des infos Android (via getprop et commandes shell)
+    def getprop(prop): 
+        try:
+            return os.popen(f"getprop {prop}").read().strip()
+        except Exception:
+            return ""
+
+    def get_output(cmd): 
+        try:
+            return os.popen(cmd).read().strip()
+        except Exception:
+            return ""
+
+    model = getprop("ro.product.model") or "UnknownModel"
+    manufacturer = getprop("ro.product.manufacturer") or "UnknownManufacturer"
+    brand = getprop("ro.product.brand") or "UnknownBrand"
+    device = getprop("ro.product.device") or "UnknownDevice"
+    board = getprop("ro.product.board") or "UnknownBoard"
+    release = getprop("ro.build.version.release") or "UnknownRelease"
+    version_sdk = getprop("ro.build.version.sdk") or "0"
+    fingerprint = getprop("ro.build.fingerprint") or "UnknownFingerprint"
+    build_id = getprop("ro.build.id") or "UnknownBuildID"
+    build_tags = getprop("ro.build.tags") or "UnknownBuildTags"
+
+    resolution = get_output("wm size").split(":")[-1].strip() or "1080x1920"
+    dpi_line = get_output("dumpsys display | grep dpi")
+    dpi = dpi_line.split("dpi")[0].strip().split()[-1] if dpi_line else "420"
+
     data = {
         "username": username,
         "password": password,
@@ -62,24 +90,24 @@ def creer_profil_json(username, password):
             },
             "last_login": time.time(),
             "device_settings": {
-                "user_agent": "Instagram 269.0.0.18.75 Android (33/13; 420dpi; 1080x1920; TECNO; TECNO BG6; TECNO-866; mt6765)",
-                "manufacturer": "TECNO",
-                "model": "TECNO BG6",
-                "device": "TECNO-866",
-                "android_version": 33,
-                "android_release": "13",
-                "dpi": "420",
-                "resolution": "1080x1920",
+                "user_agent": f"Instagram 269.0.0.18.75 Android ({version_sdk}/{release}; {dpi}dpi; {resolution}; {manufacturer}; {model}; {device}; mt6765)",
+                "manufacturer": manufacturer,
+                "model": model,
+                "device": device,
+                "android_version": int(version_sdk) if version_sdk.isdigit() else 0,
+                "android_release": release,
+                "dpi": dpi,
+                "resolution": resolution,
                 "refresh_rate": "60.0",
-                "cpu": "B66",
-                "board": "TECNO-BG6",
+                "cpu": board,
+                "board": board,
                 "bootloader": "unknown",
-                "brand": "TECNO",
-                "product": "BG6-OP",
-                "fingerprint": "TECNO/BG6-OP/TECNO-866:13/TP1A.220624.014/25021772351:user/release-keys",
+                "brand": brand,
+                "product": device,
+                "fingerprint": fingerprint,
                 "radio_version": "MODEM 228",
-                "build_id": "TP1A.220624.014",
-                "build_tags": "release-keys",
+                "build_id": build_id,
+                "build_tags": build_tags,
                 "build_type": "user",
                 "country": "FR",
                 "country_code": 261,
