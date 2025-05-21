@@ -44,27 +44,21 @@ def titre_section(titre):
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
 
-
 def horloge():
     return datetime.now().strftime("[TS %H:%M:%S]")
-
 
 def log_action(action, username):
     with open(LOG_FILE, 'a') as log:
         log.write(f"{horloge()} {action.upper()} - {username}\n")
 
-
 def success(msg):
     print(f"\033[1;32m{horloge()} [SUCCÈS]\033[0m {msg}")
-
 
 def erreur(msg):
     print(f"\033[1;31m{horloge()} [ERREUR]\033[0m {msg}")
 
-
 def info(msg):
     print(f"\033[1;34m{horloge()} [INFO]\033[0m {msg}")
-
 
 def safe_input(prompt):
     try:
@@ -72,26 +66,28 @@ def safe_input(prompt):
     except EOFError:
         return ''
 
-
 def get_prop(prop):
     if not check_cmd('getprop'):
         return ''
     try:
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
     except Exception:
-        return ''
+        return None
 
+def check_cmd(cmd):
+    return subprocess.call(['which', cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
 
 def get_android_device_info():
+    # Résolution écran
     screen_size = '1080x1920'
     density = '420'
-
     if check_cmd('wm'):
         try:
             screen_size = subprocess.check_output(['wm', 'size'], encoding='utf-8').strip().split()[-1]
         except Exception:
             pass
 
+    # Densité (dpi)
     if check_cmd('dumpsys'):
         try:
             dpi_output = subprocess.check_output(['dumpsys', 'display'], encoding='utf-8')
@@ -100,24 +96,68 @@ def get_android_device_info():
         except Exception:
             pass
 
-# Calcul de l'offset en secondes entre UTC et l'heure locale
+    # Décalage horaire en secondes
     timezone_offset = int(datetime.now(timezone.utc).astimezone().utcoffset().total_seconds())
 
-    return {
-        'android_version': get_prop('ro.build.version.release'),
-        'model': get_prop('ro.product.model'),
-        'manufacturer': get_prop('ro.product.manufacturer'),
-        'brand': get_prop('ro.product.brand'),
-        'device': get_prop('ro.product.device'),
-        'hardware': get_prop('ro.hardware'),
-        'build_id': get_prop('ro.build.display.id'),
-        'dpi': density,
-        'resolution': screen_size,
-        'locale': get_prop('persist.sys.locale') or 'fr_FR',
-        'country': get_prop('persist.sys.country') or 'FR',
-        'timezone_offset': timezone_offset
+    # UUIDs
+    uuids = {
+        "phone_id": str(uuid.uuid4()),
+        "uuid": str(uuid.uuid4()),
+        "client_session_id": str(uuid.uuid4()),
+        "advertising_id": str(uuid.uuid4()),
+        "android_device_id": "android-" + uuid.uuid4().hex[:16],
+        "request_id": str(uuid.uuid4()),
+        "tray_session_id": str(uuid.uuid4())
     }
 
+    # Informations appareil
+    device = {
+        "manufacturer": get_prop("ro.product.manufacturer"),
+        "model": get_prop("ro.product.model"),
+        "device": get_prop("ro.product.device"),
+        "android_version": int(get_prop("ro.build.version.sdk") or 33),
+        "android_release": get_prop("ro.build.version.release"),
+        "dpi": density,
+        "resolution": screen_size,
+        "refresh_rate": "60.0",
+        "cpu": get_prop("ro.product.board"),
+        "board": get_prop("ro.product.board"),
+        "bootloader": get_prop("ro.bootloader") or "unknown",
+        "brand": get_prop("ro.product.brand"),
+        "product": get_prop("ro.product.name"),
+        "fingerprint": get_prop("ro.build.fingerprint"),
+        "radio_version": get_prop("gsm.version.baseband"),
+        "build_id": get_prop("ro.build.display.id"),
+        "build_tags": get_prop("ro.build.tags"),
+        "build_type": get_prop("ro.build.type")
+    }
+
+    # User agent simulé
+    user_agent = f"Instagram 269.0.0.18.75 Android ({device['android_version']}/{device['android_release']}; {device['dpi']}dpi; {device['resolution']}; {device['brand']}; {device['model']}; {device['device']}; en_US)"
+
+    # Données finales
+    config_data = {
+        "username": "username",
+        "password": "password",
+        "uuids": uuids,
+        "mid": str(uuid.uuid4().hex[:30]),
+        "ig_u_rur": None,
+        "ig_www_claim": "0",
+        "authorization_data": {
+            "ds_user_id": "0000000000000000",
+            "sessionid": "0000000000%3AXYZ123%3A8%3AABC"
+        },
+        "cookies": {},
+        "last_login": datetime.now().timestamp(),
+        "device_settings": device,
+        "user_agent": user_agent,
+        "country": get_prop("persist.sys.country") or "FR",
+        "country_code": 261,
+        "locale": get_prop("persist.sys.locale") or "fr_FR",
+        "timezone_offset": timezone_offset
+    }
+
+ return config_data
 
 def creer_config():
     clear()
