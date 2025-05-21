@@ -20,6 +20,7 @@ LOGO_PATH = os.path.join(PROJECT_DIR, 'assets/logo.sh')
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
+os.chmod(LOG_FILE, 0o600)
 
 def check_cmd(cmd):
     return shutil.which(cmd) is not None
