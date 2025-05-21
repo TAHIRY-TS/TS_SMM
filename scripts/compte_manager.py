@@ -99,7 +99,10 @@ def get_android_device_info():
             density = match.group(1) if match else '420'
         except Exception:
             pass
-    timezone_offset = int((datetime.now() - datetime.now(timezone.utc)).total_seconds())
+
+# Calcul de l'offset en secondes entre UTC et l'heure locale
+    timezone_offset = int(datetime.now(timezone.utc).astimezone().utcoffset().total_seconds())
+
     return {
         'android_version': get_prop('ro.build.version.release'),
         'model': get_prop('ro.product.model'),
