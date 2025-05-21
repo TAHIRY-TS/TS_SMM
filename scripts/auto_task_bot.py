@@ -20,7 +20,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 CONFIG_DIR = os.path.join(PROJECT_DIR, 'config')
 CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json')
-CONFIG1_PATH = os.path.join(CONFIG_DIR, 'config1.json')
+USER_PATH = os.path.join(CONFIG_DIR, 'username.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
 LOGS_DIR = os.path.join(SCRIPT_DIR, 'logs')
@@ -39,8 +39,8 @@ try:
         api_id = config["api_id"]
         api_hash = config["api_hash"]
 
-    with open(CONFIG1_PATH) as f:
-        config1 = json.load(f)
+    with open(USER_PATH) as f:
+        username = json.load(f)
         min_delay = config1.get("min_delay", 5)
         max_delay = config1.get("max_delay", 15)
 
