@@ -7,7 +7,7 @@ import shutil
 import uuid
 import subprocess
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 SCRIPT_DIR = os.path.join(PROJECT_DIR, 'scripts')
@@ -99,9 +99,7 @@ def get_android_device_info():
             density = match.group(1) if match else '420'
         except Exception:
             pass
-
-    timezone_offset = int((datetime.now() - datetime.utcnow()).total_seconds())
-
+    timezone_offset = int((datetime.now() - datetime.now(timezone.utc)).total_seconds())
     return {
         'android_version': get_prop('ro.build.version.release'),
         'model': get_prop('ro.product.model'),
