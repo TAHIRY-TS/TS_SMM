@@ -89,21 +89,21 @@ def get_android_device_info():
 
 def creer_config():
     clear()
-    print("AJOUTER UN COMPTE")
+    titre_section("AJOUTER UN COMPTE")
 
-    username = input("Nom d'utilisateur Instagram: ").strip()
+    username = input("\nNom d'utilisateur Instagram: ").strip()
     password = input("Mot de passe: ").strip()
 
     if not username or not password:
-        erreur("Champs obligatoires vides.")
-        input("Appuyez sur Entrée pour continuer...")
+        erreur("\nChamps obligatoires vides.")
+        input("\nAppuyez sur Entrée pour continuer...")
         return
 
     filepath = os.path.join(CONFIG_DIR, f"{username}.json")
 
     if os.path.exists(filepath):
-        erreur("Ce compte existe déjà.")
-        input("Appuyez sur Entrée pour continuer...")
+        erreur("\nCe compte existe déjà.")
+        input("\nAppuyez sur Entrée pour continuer...")
         return
 
     device_info = get_android_device_info()
@@ -118,14 +118,14 @@ def creer_config():
     with open(filepath, 'w') as f:
         json.dump(profile, f, indent=4)
 
-    success(f"Profil enregistré pour {username}.")
+    success(f"\nProfil enregistré pour {username}.")
     log_action("créé", username)
-    input("Appuyez sur Entrée pour revenir au menu...")
+    input("\nAppuyez sur Entrée pour revenir au menu...")
 
 
 def supprimer_compte():
     clear()
-    print("SUPPRIMER UN COMPTE")
+    titre_section("SUPPRIMER UN COMPTE")
 
     username = input("Nom d'utilisateur à supprimer: ").strip()
 
@@ -134,29 +134,29 @@ def supprimer_compte():
         os.path.join(SESSION_DIR, f"{username}_session.json")
     ]
 
-    confirm = input(f"Confirmer suppression de {username} ? (o/n): ").lower()
+    confirm = input(f"\nConfirmer suppression de {username} ? (o/n): ").lower()
     if confirm != 'o':
         print("Annulé.")
-        input("Appuyez sur Entrée pour revenir au menu...")
+        input("\nAppuyez sur Entrée pour revenir au menu...")
         return
 
     for f in fichiers:
         if os.path.exists(f):
             os.remove(f)
-            print(f"\033[1;31m[SUPPRIMÉ]\033[0m {f}")
+            print(f"\n\033[1;31m[SUPPRIMÉ]\033[0m {f}")
 
     log_action("supprimé", username)
-    input("Appuyez sur Entrée pour revenir au menu...")
+    input("\nAppuyez sur Entrée pour revenir au menu...")
 
 
 def lister_comptes():
     clear()
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
 
-    print("PROFILS ENREGISTRÉS")
+    print("\nPROFILS ENREGISTRÉS")
 
     if not fichiers:
-        print("Aucun profil enregistré.")
+        print("\nAucun profil enregistré.")
     else:
         for f in fichiers:
             print(" -", f.replace('.json', ''))
@@ -166,7 +166,7 @@ def lister_comptes():
 
 def nettoyer_sessions_orphelines():
     clear()
-    print("NETTOYAGE DES SESSIONS ORPHELINES")
+    titre_section("NETTOYAGE DES SESSIONS ORPHELINES")
 
     configs = [f.replace('.json', '') for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
     sessions = [f for f in os.listdir(SESSION_DIR) if f.endswith('_session.json')]
@@ -178,23 +178,23 @@ def nettoyer_sessions_orphelines():
         if username not in configs:
             try:
                 os.remove(os.path.join(SESSION_DIR, session_file))
-                print(f"\033[1;33m[SUPPRIMÉ]\033[0m {session_file}")
+                print(f"\n\033[1;33m[SUPPRIMÉ]\033[0m {session_file}")
                 supprimés += 1
             except Exception as e:
-                erreur(f"Erreur suppression {session_file}: {e}")
+                erreur(f"\nErreur suppression {session_file}: {e}")
 
     if supprimés:
         info(f"{supprimés} session(s) supprimée(s).")
     else:
-        info("Aucune session orpheline.")
+        info("\nAucune session orpheline.")
 
-    input("Appuyez sur Entrée pour revenir au menu...")
+    input("\nAppuyez sur Entrée pour revenir au menu...")
 
 
 def menu():
     while True:
         clear()
-        print("GESTION DES COMPTES")
+        titre_section("GESTION DES COMPTES")
         print("\n1. Ajouter un compte")
         print("2. Supprimer un compte")
         print("3. Lister les comptes")
@@ -212,11 +212,11 @@ def menu():
         elif choix == "4":
             nettoyer_sessions_orphelines()
         elif choix == "0":
-            print("Au revoir.")
+            print("\nAu revoir.")
             break
         else:
-            erreur("Choix invalide.")
-            input("Appuyez sur Entrée...")
+            erreur("\nChoix invalide.")
+            input("\nAppuyez sur Entrée...")
 
 
 if __name__ == "__main__":
