@@ -20,7 +20,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 CONFIG_DIR = os.path.join(PROJECT_DIR, 'scripts', 'config')
 CONFIG_PATH = os.path.join(PROJECT_DIR, 'config', 'config.json')
-USER_PATH = os.path.join(CONFIG_DIR, 'username.json')
+USER_PATH = os.path.join(CONFIG_DIR, '{username}.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
 LOGS_DIR = os.path.join(SCRIPT_DIR, 'logs')
@@ -40,7 +40,7 @@ try:
         api_hash = config["api_hash"]
 
     with open(USER_PATH) as f:
-        username = json.load(f)
+        {username} = json.load(f)
         min_delay = config1.get("min_delay", 5)
         max_delay = config1.get("max_delay", 15)
 
@@ -53,7 +53,7 @@ except Exception as e:
 def charger_utilisateurs():
     users = []
     for fichier in os.listdir(CONFIG_DIR):
-        if fichier.endswith(".json") and fichier not in ["config.json", "username.json", "selected_user.json"]:
+        if fichier.endswith(".json") and fichier not in ["config.json", "{username}.json", "selected_user.json"]:
             chemin = os.path.join(CONFIG_DIR, fichier)
             try:
                 with open(chemin) as f:
