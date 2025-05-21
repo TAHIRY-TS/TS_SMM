@@ -8,41 +8,53 @@ import subprocess
 import re
 from datetime import datetime
 
+
 CONFIG_DIR = 'config'
 SESSION_DIR = 'sessions'
 LOG_FILE = 'history.log'
 
+
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
+
+
 def titre_section(titre):
     print(f"\n\033[1;35m{'=' * 40}")
     print(f"{titre.center(40)}")
     print(f"{'=' * 40}\033[0m\n")
 
+
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
 
+
 def horloge():
     return datetime.now().strftime("[TS %H:%M:%S]")
+
 
 def log_action(action, username):
     with open(LOG_FILE, 'a') as log:
         log.write(f"{horloge()} {action.upper()} - {username}\n")
 
+
 def success(msg):
     print(f"\033[1;32m{horloge()} [SUCCÈS]\033[0m {msg}")
+
 
 def erreur(msg):
     print(f"\033[1;31m{horloge()} [ERREUR]\033[0m {msg}")
 
+
 def info(msg):
     print(f"\033[1;34m{horloge()} [INFO]\033[0m {msg}")
+
 
 def get_prop(prop):
     try:
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
     except Exception:
         return ''
+
 
 def get_android_device_info():
     try:
@@ -58,6 +70,7 @@ def get_android_device_info():
         density = '420'
 
     timezone_offset = int((datetime.now() - datetime.utcnow()).total_seconds())
+
     return {
         'android_version': get_prop('ro.build.version.release'),
         'model': get_prop('ro.product.model'),
@@ -73,9 +86,11 @@ def get_android_device_info():
         'timezone_offset': timezone_offset
     }
 
+
 def creer_config():
     clear()
-    print("--- AJOUTER UN COMPTE ---")
+    print("AJOUTER UN COMPTE")
+
     username = input("Nom d'utilisateur Instagram: ").strip()
     password = input("Mot de passe: ").strip()
 
@@ -85,12 +100,14 @@ def creer_config():
         return
 
     filepath = os.path.join(CONFIG_DIR, f"{username}.json")
+
     if os.path.exists(filepath):
         erreur("Ce compte existe déjà.")
         input("Appuyez sur Entrée pour continuer...")
         return
 
     device_info = get_android_device_info()
+
     profile = {
         "username": username,
         "password": password,
@@ -105,14 +122,18 @@ def creer_config():
     log_action("créé", username)
     input("Appuyez sur Entrée pour revenir au menu...")
 
+
 def supprimer_compte():
     clear()
     print("SUPPRIMER UN COMPTE")
+
     username = input("Nom d'utilisateur à supprimer: ").strip()
+
     fichiers = [
         os.path.join(CONFIG_DIR, f"{username}.json"),
         os.path.join(SESSION_DIR, f"{username}_session.json")
     ]
+
     confirm = input(f"Confirmer suppression de {username} ? (o/n): ").lower()
     if confirm != 'o':
         print("Annulé.")
@@ -123,26 +144,35 @@ def supprimer_compte():
         if os.path.exists(f):
             os.remove(f)
             print(f"\033[1;31m[SUPPRIMÉ]\033[0m {f}")
+
     log_action("supprimé", username)
     input("Appuyez sur Entrée pour revenir au menu...")
+
 
 def lister_comptes():
     clear()
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
+
     print("PROFILS ENREGISTRÉS")
+
     if not fichiers:
         print("Aucun profil enregistré.")
     else:
         for f in fichiers:
             print(" -", f.replace('.json', ''))
+
     input("\nAppuyez sur Entrée pour revenir au menu...")
+
 
 def nettoyer_sessions_orphelines():
     clear()
     print("NETTOYAGE DES SESSIONS ORPHELINES")
+
     configs = [f.replace('.json', '') for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
     sessions = [f for f in os.listdir(SESSION_DIR) if f.endswith('_session.json')]
+
     supprimés = 0
+
     for session_file in sessions:
         username = session_file.replace('_session.json', '')
         if username not in configs:
@@ -152,11 +182,14 @@ def nettoyer_sessions_orphelines():
                 supprimés += 1
             except Exception as e:
                 erreur(f"Erreur suppression {session_file}: {e}")
+
     if supprimés:
         info(f"{supprimés} session(s) supprimée(s).")
     else:
         info("Aucune session orpheline.")
+
     input("Appuyez sur Entrée pour revenir au menu...")
+
 
 def menu():
     while True:
@@ -167,6 +200,7 @@ def menu():
         print("3. Lister les comptes")
         print("4. Nettoyer les sessions orphelines")
         print("0. Quitter")
+
         choix = input("\nChoix: ").strip()
 
         if choix == "1":
@@ -183,6 +217,7 @@ def menu():
         else:
             erreur("Choix invalide.")
             input("Appuyez sur Entrée...")
+
 
 if __name__ == "__main__":
     menu()
