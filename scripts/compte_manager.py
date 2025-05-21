@@ -10,7 +10,7 @@ import re
 from datetime import datetime
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = os.path.join(PROJECT_DIR, 'scripts')
 CONFIG_DIR = os.path.join(SCRIPT_DIR, 'config')
 SESSION_DIR = os.path.join(SCRIPT_DIR, 'sessions')
 LOG_FILE = os.path.join(SCRIPT_DIR, 'history.log')
