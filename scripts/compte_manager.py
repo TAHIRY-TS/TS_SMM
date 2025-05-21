@@ -19,10 +19,11 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 
 
 def titre_section(titre):
-    print(f"\n\033[1;35m{'=' * 40}")
-    print(f"{titre.center(40)}")
-    print(f"{'=' * 40}\033[0m\n")
-
+    titre_formate = f" {titre.upper()} "
+    largeur = 50  # largeur fixe pour un centrage parfait
+    print(f"\n\033[1;35m╔{'═' * largeur}╗\033[0m")
+    print(f"\033[1;35m║{titre_formate.center(largeur)}║\033[0m")
+    print(f"\033[1;35m╚{'═' * largeur}╝\033[0m\n")
 
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -153,7 +154,7 @@ def lister_comptes():
     clear()
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
 
-    print("\nPROFILS ENREGISTRÉS")
+    titre_section("COMPTES ENREGISTRÉS")
 
     if not fichiers:
         print("\nAucun profil enregistré.")
