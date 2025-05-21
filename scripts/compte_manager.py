@@ -275,7 +275,10 @@ def menu():
         elif choix == "4":
             nettoyer_sessions_orphelines()
         elif choix == "5":
-            python3 session_creator.py
+             try:
+                subprocess.run([sys.executable, "session_creator.py"])
+            except Exception as e:
+                print(f"[X] Erreur lors de l'exécution : {e}")
         elif choix == "0":
             print("\nAu revoir.")
             break
