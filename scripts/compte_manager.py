@@ -1,24 +1,29 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
-import sys
 import json
 import uuid
 import time
-import platform
+import subprocess
+import re
 from datetime import datetime
+from instagram_private_api import Client, ClientError
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ACCOUNTS_DIR = os.path.join(BASE_DIR, "accounts")
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DIR = os.path.join(BASE_DIR, "config")
-HISTORY_PATH = os.path.join(ACCOUNTS_DIR, "history.log")
+SESSION_DIR = os.path.join(BASE_DIR, "sessions")
+HISTORY_PATH = os.path.join(BASE_DIR, "history.log")
 
-os.makedirs(ACCOUNTS_DIR, exist_ok=True)
 os.makedirs(CONFIG_DIR, exist_ok=True)
+os.makedirs(SESSION_DIR, exist_ok=True)
 
 def horloge():
     return datetime.now().strftime("[TS %H:%M:%S]")
 
-def info(msg):
-    print(f"{horloge()} \033[1;34m{msg}\033[0m")
+def log_action(msg):
+    with open(HISTORY_PATH, 'a') as log_file:
+        log_file.write(f"{horloge()} {msg}\n")
 
 def success(msg):
     print(f"{horloge()} \033[1;32m{msg}\033[0m")
@@ -26,58 +31,101 @@ def success(msg):
 def erreur(msg):
     print(f"{horloge()} \033[1;31m{msg}\033[0m")
 
-def enregistrer_historique(msg):
-    with open(HISTORY_PATH, "a") as f:
-        f.write(f"{horloge()} {msg}\n")
+def info(msg):
+    print(f"{horloge()} \033[1;34m{msg}\033[0m")
 
-def get_uuid():
-    return str(uuid.uuid4())
+def get_prop(prop):
+    try:
+        return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
+    except Exception:
+        return ''
 
-def creer_profil_json(username, password):
-    file_path = os.path.join(CONFIG_DIR, f"{username}.json")
-    if os.path.exists(file_path):
-        erreur("Ce compte existe déjà.")
-        return
+def get_output(cmd):
+    try:
+        return subprocess.check_output(cmd, shell=True, encoding='utf-8').strip()
+    except Exception:
+        return ''
 
-    # Détection dynamique des infos Android (via getprop et commandes shell)
-    def getprop(prop): 
-        try:
-            return os.popen(f"getprop {prop}").read().strip()
-        except Exception:
-            return ""
+def get_android_device_info():
+    try:
+        screen_size = subprocess.check_output(['wm', 'size'], encoding='utf-8').strip().split()[-1]
+    except Exception:
+        screen_size = '1080x1920'
 
-    def get_output(cmd): 
-        try:
-            return os.popen(cmd).read().strip()
-        except Exception:
-            return ""
+    try:
+        dpi_output = subprocess.check_output(['dumpsys', 'display'], encoding='utf-8')
+        match = re.search(r'Physical density: (\d+)', dpi_output)
+        density = match.group(1) if match else '420'
+    except Exception:
+        density = '420'
 
-    model = getprop("ro.product.model") or "UnknownModel"
-    manufacturer = getprop("ro.product.manufacturer") or "UnknownManufacturer"
-    brand = getprop("ro.product.brand") or "UnknownBrand"
-    device = getprop("ro.product.device") or "UnknownDevice"
-    board = getprop("ro.product.board") or "UnknownBoard"
-    release = getprop("ro.build.version.release") or "UnknownRelease"
-    version_sdk = getprop("ro.build.version.sdk") or "0"
-    fingerprint = getprop("ro.build.fingerprint") or "UnknownFingerprint"
-    build_id = getprop("ro.build.id") or "UnknownBuildID"
-    build_tags = getprop("ro.build.tags") or "UnknownBuildTags"
+    timezone_offset = int((datetime.now() - datetime.utcnow()).total_seconds())
 
-    resolution = get_output("wm size").split(":")[-1].strip() or "1080x1920"
-    dpi_line = get_output("dumpsys display | grep dpi")
-    dpi = dpi_line.split("dpi")[0].strip().split()[-1] if dpi_line else "420"
+    return {
+        'android_version': get_prop('ro.build.version.release'),
+        'device_model': get_prop('ro.product.model'),
+        'device_brand': get_prop('ro.product.brand'),
+        'device_manufacturer': get_prop('ro.product.manufacturer'),
+        'screen_resolution': screen_size,
+        'screen_density': density,
+        'build_tags': get_prop('ro.build.tags'),
+        'build_type': get_prop('ro.build.type'),
+        'country': get_prop('persist.sys.country') or "FR",
+        'country_code': get_prop('gsm.operator.numeric') or get_prop('ro.csc.country_code') or "261",
+        'locale': get_prop('persist.sys.locale') or "fr_FR",
+        'timezone_offset': timezone_offset
+    }
 
-    data = {
-        "username": username,
-        "password": password,
+def generate_device_profile():
+    info_device = get_android_device_info()
+
+    version_sdk = get_prop("ro.build.version.sdk") or "0"
+    model = info_device['device_model'] or "UnknownModel"
+    manufacturer = info_device['device_manufacturer'] or "UnknownManufacturer"
+    brand = info_device['device_brand'] or "UnknownBrand"
+    device = get_prop("ro.product.device") or "UnknownDevice"
+    board = get_prop("ro.product.board") or "UnknownBoard"
+    release = info_device['android_version'] or "UnknownRelease"
+    fingerprint = get_prop("ro.build.fingerprint") or "UnknownFingerprint"
+    build_id = get_prop("ro.build.id") or "UnknownBuildID"
+    build_tags = info_device['build_tags'] or "UnknownBuildTags"
+    resolution = info_device['screen_resolution'] or "1080x1920"
+    dpi = info_device['screen_density'] or "420"
+
+    return {
+        "device_settings": {
+            "user_agent": f"Instagram 269.0.0.18.75 Android ({version_sdk}/{release}; {dpi}dpi; {resolution}; {manufacturer}; {model}; {device}; mt6765)",
+            "manufacturer": manufacturer,
+            "model": model,
+            "device": device,
+            "android_version": int(version_sdk) if version_sdk.isdigit() else 0,
+            "android_release": release,
+            "dpi": dpi,
+            "resolution": resolution,
+            "refresh_rate": "60.0",
+            "cpu": board,
+            "board": board,
+            "bootloader": "unknown",
+            "brand": brand,
+            "product": device,
+            "fingerprint": fingerprint,
+            "radio_version": "MODEM 228",
+            "build_id": build_id,
+            "build_tags": build_tags,
+            "build_type": info_device['build_type'] or "user",
+            "country": info_device['country'],
+            "country_code": int(info_device['country_code']) if info_device['country_code'].isdigit() else 261,
+            "locale": info_device['locale'],
+            "timezone_offset": info_device['timezone_offset']
+        },
         "uuids": {
-            "phone_id": get_uuid(),
-            "uuid": get_uuid(),
-            "client_session_id": get_uuid(),
-            "advertising_id": get_uuid(),
+            "uuid": str(uuid.uuid4()),
+            "phone_id": str(uuid.uuid4()),
+            "client_session_id": str(uuid.uuid4()),
+            "advertising_id": str(uuid.uuid4()),
             "android_device_id": f"android-{uuid.uuid4().hex[:16]}",
-            "request_id": get_uuid(),
-            "tray_session_id": get_uuid(),
+            "request_id": str(uuid.uuid4()),
+            "tray_session_id": str(uuid.uuid4()),
             "mid": f"a{uuid.uuid4().hex[:13].upper()}",
             "ig_u_rur": None,
             "ig_www_claim": "0",
@@ -88,139 +136,119 @@ def creer_profil_json(username, password):
                     "csrftoken": uuid.uuid4().hex[:32]
                 }
             },
-            "last_login": time.time(),
-            "device_settings": {
-                "user_agent": f"Instagram 269.0.0.18.75 Android ({version_sdk}/{release}; {dpi}dpi; {resolution}; {manufacturer}; {model}; {device}; mt6765)",
-                "manufacturer": manufacturer,
-                "model": model,
-                "device": device,
-                "android_version": int(version_sdk) if version_sdk.isdigit() else 0,
-                "android_release": release,
-                "dpi": dpi,
-                "resolution": resolution,
-                "refresh_rate": "60.0",
-                "cpu": board,
-                "board": board,
-                "bootloader": "unknown",
-                "brand": brand,
-                "product": device,
-                "fingerprint": fingerprint,
-                "radio_version": "MODEM 228",
-                "build_id": build_id,
-                "build_tags": build_tags,
-                "build_type": "user",
-                "country": "FR",
-                "country_code": 261,
-                "locale": "fr_FR",
-                "timezone_offset": 10800
-            }
+            "last_login": time.time()
         }
     }
 
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=4)
-    enregistrer_historique(f"[+] Ajout du compte : {username}")
-    success(f"Profil {username} ajouté avec succès.")
-
-def supprimer_compte(username):
+def save_config(username, password):
+    data = {
+        "username": username,
+        "password": password,
+        **generate_device_profile()
+    }
     path = os.path.join(CONFIG_DIR, f"{username}.json")
-    if os.path.exists(path):
-        os.remove(path)
-        enregistrer_historique(f"[-] Supprimé : {username}")
-        success(f"Compte {username} supprimé.")
-    else:
-        erreur("Ce compte n'existe pas.")
+    with open(path, "w") as f:
+        json.dump(data, f, indent=4)
+    log_action(f"[+] Ajout du compte : {username}")
+    success(f"Profil {username} ajouté.")
 
-def lister_comptes():
-    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
-    if not fichiers:
+def login_account(username, password):
+    try:
+        api = Client(username, password)
+        session_file = os.path.join(SESSION_DIR, f"{username}_session.json")
+        with open(session_file, 'w') as f:
+            f.write(json.dumps(api.settings))
+        log_action(f"[SUCCESS] Connexion réussie : {username}")
+        success(f"Connexion réussie pour {username}.")
+        return True
+    except ClientError as e:
+        erreur(f"[FAIL] Échec de connexion pour {username} : {e}")
+        return False
+
+def add_account():
+    username = input("Nom d'utilisateur Instagram: ")
+    password = input("Mot de passe: ")
+    save_config(username, password)
+    login_account(username, password)
+
+def test_accounts():
+    files = os.listdir(CONFIG_DIR)
+    for file in files:
+        if not file.endswith('.json'):
+            continue
+        with open(os.path.join(CONFIG_DIR, file), 'r') as f:
+            data = json.load(f)
+        username = data.get('username')
+        password = data.get('password')
+        if username and password:
+            print(f"Test de {username}...")
+            login_account(username, password)
+
+def delete_account():
+    username = input("Nom d'utilisateur à supprimer: ")
+    config_path = os.path.join(CONFIG_DIR, f"{username}.json")
+    session_path = os.path.join(SESSION_DIR, f"{username}_session.json")
+    if os.path.exists(config_path):
+        os.remove(config_path)
+    if os.path.exists(session_path):
+        os.remove(session_path)
+    log_action(f"[-] Compte supprimé : {username}")
+    success(f"{username} supprimé.")
+
+def list_accounts():
+    files = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
+    if not files:
         info("Aucun compte trouvé.")
-        return
-    print("\n\033[1;36m╔═════════════════ COMPTES ENREGISTRÉS ═══════════════╗\033[0m")
-    for i, fichier in enumerate(fichiers, 1):
-        print(f"  {i}. {fichier.replace('.json', '')}")
-    print("\033[1;36m╚════════════════════════════════════════════════════╝\033[0m\n")
+    else:
+        print("\n\033[1;36m╔══════════ COMPTES ENREGISTRÉS ══════════╗\033[0m")
+        for i, file in enumerate(files, 1):
+            print(f"  {i}. {file.replace('.json', '')}")
+        print("\033[1;36m╚═════════════════════════════════════════╝\033[0m\n")
 
-def supprimer_tous():
-    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
-    for f in fichiers:
-        os.remove(os.path.join(CONFIG_DIR, f))
-    enregistrer_historique("[!] Tous les comptes ont été supprimés.")
-    success("Tous les comptes ont été supprimés.")
-
-def extraire_infos_session(username):
+def extract_session(username):
     path = os.path.join(CONFIG_DIR, f"{username}.json")
     if not os.path.exists(path):
         erreur("Ce compte n'existe pas.")
         return
+    with open(path, "r") as f:
+        data = json.load(f)
+    auth = data.get("uuids", {}).get("authorization_data", {})
+    sessionid = auth.get("sessionid", "N/A")
+    ds_user_id = auth.get("ds_user_id", "N/A")
+    csrftoken = auth.get("cookies", {}).get("csrftoken", "N/A")
 
-    try:
-        with open(path, "r") as f:
-            data = json.load(f)
+    print(f"\n\033[1;35m╔═══════════ SESSION POUR {username} ═══════════╗\033[0m")
+    print(f"  Session ID   : {sessionid}")
+    print(f"  DS User ID   : {ds_user_id}")
+    print(f"  CSRF Token   : {csrftoken}")
+    print("\033[1;35m╚═══════════════════════════════════════════════╝\033[0m\n")
 
-        auth = data["uuids"]["authorization_data"]
-        sessionid = auth.get("sessionid", "N/A")
-        ds_user_id = auth.get("ds_user_id", "N/A")
-        csrftoken = auth.get("cookies", {}).get("csrftoken", "N/A")
-
-        print(f"\n\033[1;35m╔═══════════ SESSION POUR {username} ═══════════╗\033[0m")
-        print(f"  SessionID   : {sessionid}")
-        print(f"  DS_User_ID  : {ds_user_id}")
-        print(f"  CSRFToken   : {csrftoken}")
-        print("\033[1;35m╚═══════════════════════════════════════════════╝\033[0m")
-        enregistrer_historique(f"[INFO] Extraction session pour {username}")
-    except Exception as e:
-        erreur(f"Erreur lors de la lecture : {e}")
-
-def menu():
+def main_menu():
     while True:
-        print("\n\033[1;36m[ MENU DE GESTION DES COMPTES INSTAGRAM ]\033[0m")
-        print("1. Ajouter un compte")
-        print("2. Supprimer un compte")
-        print("3. Lister les comptes")
-        print("4. Supprimer tous les comptes")
-        print("5. Extraire session/cookies")
-        print("6. Quitter")
-        choix = input("\nChoix : ")
-        if choix == "1":
-            username = input("Nom d'utilisateur : ")
-            password = input("Mot de passe : ")
-            creer_profil_json(username, password)
-        elif choix == "2":
-            username = input("Nom du compte à supprimer : ")
-            supprimer_compte(username)
-        elif choix == "3":
-            lister_comptes()
-        elif choix == "4":
-            supprimer_tous()
-        elif choix == "5":
-            username = input("Nom d'utilisateur : ")
-            extraire_infos_session(username)
-        elif choix == "6":
+        print(""" ========== MENU ==========
+1. Ajouter un compte
+2. Tester les comptes
+3. Supprimer un compte
+4. Lister les comptes
+5. Extraire session
+6. Quitter
+""")
+        choix = input("Choix: ")
+        if choix == '1':
+            add_account()
+        elif choix == '2':
+            test_accounts()
+        elif choix == '3':
+            delete_account()
+        elif choix == '4':
+            list_accounts()
+        elif choix == '5':
+            username = input("Nom d'utilisateur: ")
+            extract_session(username)
+        elif choix == '6':
             break
         else:
             erreur("Choix invalide.")
 
-if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        menu()
-    else:
-        action = sys.argv[1]
-        if action == "add" and len(sys.argv) == 4:
-            creer_profil_json(sys.argv[2], sys.argv[3])
-        elif action == "list":
-            lister_comptes()
-        elif action == "delete" and len(sys.argv) == 3:
-            supprimer_compte(sys.argv[2])
-        elif action == "purge":
-            supprimer_tous()
-        elif action == "extract" and len(sys.argv) == 3:
-            extraire_infos_session(sys.argv[2])
-        else:
-            print("Usage :")
-            print("  python3 compte_manager.py               (menu interactif)")
-            print("  python3 compte_manager.py add USER PASS")
-            print("  python3 compte_manager.py list")
-            print("  python3 compte_manager.py delete USER")
-            print("  python3 compte_manager.py purge")
-            print("  python3 compte_manager.py extract USER")
+if __name__ == '__main__':
+    main_menu()
