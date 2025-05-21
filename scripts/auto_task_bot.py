@@ -18,7 +18,7 @@ def horloge_prefix():
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 CONFIG_DIR = os.path.join(PROJECT_DIR, 'scripts', 'config')
-CONFIG_USERS_PATH = os.path.join(CONFIG_DIR, 'user.json')  # Ce dossier contient les JSON utilisateurs
+CONFIG_USERS_PATH = CONFIG_DIR  # Le dossier contient tous les *.json utilisateurs
 CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
@@ -29,7 +29,6 @@ LIKE_SCRIPT_PATH = os.path.join(DATA_DIR, 'like_action.py')
 ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 
 os.makedirs(LOGS_DIR, exist_ok=True)
-os.makedirs(CONFIG_USERS_PATH, exist_ok=True)
 
 # Chargement config principale
 try:
@@ -44,11 +43,11 @@ except Exception as e:
         f.write(f"[CONFIG ERROR] {datetime.now()} - {e}\n")
     raise SystemExit("[❌] Erreur lors du chargement de la configuration principale.")
 
-# Chargement utilisateurs depuis utilisateur.json/
+# Chargement utilisateurs depuis scripts/config/*.json
 def charger_utilisateurs():
     utilisateurs = []
     for fichier in os.listdir(CONFIG_USERS_PATH):
-        if fichier.endswith(".json"):
+        if fichier.endswith(".json") and fichier not in ["config.json", "selected_user.json", "task_data.txt"]:
             chemin = os.path.join(CONFIG_USERS_PATH, fichier)
             try:
                 with open(chemin, encoding="utf-8") as f:
