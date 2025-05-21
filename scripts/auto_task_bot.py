@@ -18,7 +18,7 @@ def horloge_prefix():
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 CONFIG_DIR = os.path.join(PROJECT_DIR, 'scripts', 'config')
-CONFIG_USERS_DIR = os.path.join(CONFIG_DIR, '..')  # Ce dossier contient les JSON utilisateurs
+CONFIG_USERS_PATH = os.path.join(CONFIG_DIR, 'user.json')  # Ce dossier contient les JSON utilisateurs
 CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
@@ -47,9 +47,9 @@ except Exception as e:
 # Chargement utilisateurs depuis utilisateur.json/
 def charger_utilisateurs():
     utilisateurs = []
-    for fichier in os.listdir(CONFIG_USERS_DIR):
+    for fichier in os.listdir(CONFIG_USERS_PATH):
         if fichier.endswith(".json"):
-            chemin = os.path.join(CONFIG_USERS_DIR, fichier)
+            chemin = os.path.join(CONFIG_USERS_PATH, fichier)
             try:
                 with open(chemin, encoding="utf-8") as f:
                     data = json.load(f)
