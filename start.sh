@@ -112,6 +112,7 @@ menu_principal() {
     case $choix in
         1)
             echo -e "${CYAN}Gestion de compte Instagram...${RESET}"
+            clear
             [[ -f scripts/compte_manager.py ]] && python3 scripts/compte_manager.py
             ;;
         2)
@@ -124,6 +125,7 @@ menu_principal() {
             ;;
         4)
             echo -e "${CYAN}Mise à jour...${RESET}"
+            clear
             [[ -f main/iv.sh ]] && bash main/iv.sh
             ;;
         10)
