@@ -19,10 +19,8 @@ LOGO_PATH = os.path.join(PROJECT_DIR, 'assets/logo.sh')
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
 
-
 def check_cmd(cmd):
-    return subprocess.call(['which', cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
-
+    return shutil.which(cmd) is not None
 
 def titre_section(titre):
     if os.path.exists(LOGO_PATH):
