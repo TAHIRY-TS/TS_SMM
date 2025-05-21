@@ -83,7 +83,7 @@ afficher_cadre() {
 
 # Afficher les options
 afficher_options() {
-    echo -e "║ ${MAGENTA}1.${RESET} Se connetion à Instagram                         ║"
+    echo -e "║ ${MAGENTA}1.${RESET} Gestion de compte Instagram                      ║"
     echo -e "║ ${CYAN}2.${RESET} Lancer l'autoclick SMM                           ║"
     echo -e "║ ${JAUNE}3.${RESET} Lancer une tâche manuellement                    ║"
     echo -e "║ ${VERT}4.${RESET} Mise à jour                                      ║"
@@ -113,6 +113,7 @@ menu_principal() {
         1)
             echo -e "${CYAN}Gestion de compte Instagram...${RESET}"
             clear
+            bash assets/logo.sh
             [[ -f scripts/compte_manager.py ]] && python3 scripts/compte_manager.py
             ;;
         2)
