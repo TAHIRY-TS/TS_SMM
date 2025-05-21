@@ -8,23 +8,31 @@ import subprocess
 import re
 from datetime import datetime
 
-
-CONFIG_DIR = 'config'
-SESSION_DIR = 'sessions'
-LOG_FILE = 'history.log'
-
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_DIR = os.path.join(SCRIPT_DIR, 'config')
+SESSION_DIR = os.path.join(SCRIPT_DIR, 'sessions')
+LOG_FILE = os.path.join(SCRIPT_DIR, 'history.log')
+LOGO_PATH = os.path.join(SCRIPT_DIR, 'assets/logo.sh')
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
 
 
+def check_cmd(cmd):
+    return subprocess.call(['which', cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+
+
 def titre_section(titre):
-    subprocess.call(['./assets/logo.sh'])
+    if os.path.exists(LOGO_PATH):
+        subprocess.call(['bash', LOGO_PATH])
+    else:
+        print("\033[1;33m[AVERTISSEMENT]\033[0m Logo non trouvé.")
     titre_formate = f" {titre.upper()} "
-    largeur = 50  # largeur fixe pour un centrage parfait
+    largeur = 50
     print(f"\n\033[1;35m╔{'═' * largeur}╗\033[0m")
     print(f"\033[1;35m║{titre_formate.center(largeur)}║\033[0m")
     print(f"\033[1;35m╚{'═' * largeur}╝\033[0m\n")
+
 
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -51,7 +59,16 @@ def info(msg):
     print(f"\033[1;34m{horloge()} [INFO]\033[0m {msg}")
 
 
+def safe_input(prompt):
+    try:
+        return input(prompt)
+    except EOFError:
+        return ''
+
+
 def get_prop(prop):
+    if not check_cmd('getprop'):
+        return ''
     try:
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
     except Exception:
@@ -59,17 +76,22 @@ def get_prop(prop):
 
 
 def get_android_device_info():
-    try:
-        screen_size = subprocess.check_output(['wm', 'size'], encoding='utf-8').strip().split()[-1]
-    except Exception:
-        screen_size = '1080x1920'
+    screen_size = '1080x1920'
+    density = '420'
 
-    try:
-        dpi_output = subprocess.check_output(['dumpsys', 'display'], encoding='utf-8')
-        match = re.search(r'Physical density: (\d+)', dpi_output)
-        density = match.group(1) if match else '420'
-    except Exception:
-        density = '420'
+    if check_cmd('wm'):
+        try:
+            screen_size = subprocess.check_output(['wm', 'size'], encoding='utf-8').strip().split()[-1]
+        except Exception:
+            pass
+
+    if check_cmd('dumpsys'):
+        try:
+            dpi_output = subprocess.check_output(['dumpsys', 'display'], encoding='utf-8')
+            match = re.search(r'Physical density: (\d+)', dpi_output)
+            density = match.group(1) if match else '420'
+        except Exception:
+            pass
 
     timezone_offset = int((datetime.now() - datetime.utcnow()).total_seconds())
 
@@ -93,19 +115,19 @@ def creer_config():
     clear()
     titre_section("AJOUTER UN COMPTE")
 
-    username = input("\nNom d'utilisateur Instagram: ").strip()
-    password = input("Mot de passe: ").strip()
+    username = safe_input("\nNom d'utilisateur Instagram: ").strip()
+    password = safe_input("Mot de passe: ").strip()
 
     if not username or not password:
         erreur("\nChamps obligatoires vides.")
-        input("\nAppuyez sur Entrée pour continuer...")
+        safe_input("\nAppuyez sur Entrée pour continuer...")
         return
 
     filepath = os.path.join(CONFIG_DIR, f"{username}.json")
 
     if os.path.exists(filepath):
         erreur("\nCe compte existe déjà.")
-        input("\nAppuyez sur Entrée pour continuer...")
+        safe_input("\nAppuyez sur Entrée pour continuer...")
         return
 
     device_info = get_android_device_info()
@@ -122,24 +144,24 @@ def creer_config():
 
     success(f"\nProfil enregistré pour {username}.")
     log_action("créé", username)
-    input("\nAppuyez sur Entrée pour revenir au menu...")
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
 
 def supprimer_compte():
     clear()
     titre_section("SUPPRIMER UN COMPTE")
 
-    username = input("Nom d'utilisateur à supprimer: ").strip()
+    username = safe_input("Nom d'utilisateur à supprimer: ").strip()
 
     fichiers = [
         os.path.join(CONFIG_DIR, f"{username}.json"),
         os.path.join(SESSION_DIR, f"{username}_session.json")
     ]
 
-    confirm = input(f"\nConfirmer suppression de {username} ? (o/n): ").lower()
+    confirm = safe_input(f"\nConfirmer suppression de {username} ? (o/n): ").lower()
     if confirm != 'o':
         print("Annulé.")
-        input("\nAppuyez sur Entrée pour revenir au menu...")
+        safe_input("\nAppuyez sur Entrée pour revenir au menu...")
         return
 
     for f in fichiers:
@@ -148,7 +170,7 @@ def supprimer_compte():
             print(f"\n\033[1;31m[SUPPRIMÉ]\033[0m {f}")
 
     log_action("supprimé", username)
-    input("\nAppuyez sur Entrée pour revenir au menu...")
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
 
 def lister_comptes():
@@ -163,7 +185,7 @@ def lister_comptes():
         for f in fichiers:
             print(" -", f.replace('.json', ''))
 
-    input("\nAppuyez sur Entrée pour revenir au menu...")
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
 
 def nettoyer_sessions_orphelines():
@@ -190,7 +212,7 @@ def nettoyer_sessions_orphelines():
     else:
         info("\nAucune session orpheline.")
 
-    input("\nAppuyez sur Entrée pour revenir au menu...")
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
 
 def menu():
@@ -203,7 +225,7 @@ def menu():
         print("4. Nettoyer les sessions orphelines")
         print("0. Quitter")
 
-        choix = input("\nChoix: ").strip()
+        choix = safe_input("\nChoix: ").strip()
 
         if choix == "1":
             creer_config()
@@ -218,8 +240,11 @@ def menu():
             break
         else:
             erreur("\nChoix invalide.")
-            input("\nAppuyez sur Entrée...")
+            safe_input("\nAppuyez sur Entrée...")
 
 
 if __name__ == "__main__":
-    menu()
+    try:
+        menu()
+    except KeyboardInterrupt:
+        print("\n\n\033[1;33mInterruption par utilisateur. Fermeture...\033[0m")
