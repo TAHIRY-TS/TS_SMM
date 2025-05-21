@@ -133,9 +133,7 @@ def get_android_device_info():
         "build_tags": get_prop("ro.build.tags"),
         "build_type": get_prop("ro.build.type")
     }
-
-    user_agent = f"Instagram 269.0.0.18.75 Android ({device['android_version']}/{device['android_release']}; {device['dpi']}dpi; {device['resolution']}; {device['brand']}; {device['model']}; {device['device']}; en_US)"
-
+    user_agent = f"Instagram 269.0.0.18.75 Android ({device_settings['android_version']}/{device_settings['android_release']}; {device_settings['dpi']}dpi; {device_settings['resolution']}; {device_settings['brand']}; {device_settings['model']}; {device_settings['device']}; en_US)"
     return {
         "uuids": uuids,
         "device_settings": device_settings,
