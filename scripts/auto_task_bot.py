@@ -18,7 +18,7 @@ def horloge_prefix():
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 CONFIG_DIR = os.path.join(PROJECT_DIR, 'scripts', 'config')
-CONFIG_USERS_DIR = os.path.join(CONFIG_DIR, 'utilisateur.json')  # Ce dossier contient les JSON utilisateurs
+CONFIG_USERS_DIR = os.path.join(CONFIG_DIR, '..')  # Ce dossier contient les JSON utilisateurs
 CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
