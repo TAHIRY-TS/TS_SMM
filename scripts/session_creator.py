@@ -1,18 +1,38 @@
 import os
 import json
 import time
+import datetime
 from instagram_private_api import Client, ClientError
 
+# Dossiers
 CONFIG_DIR = "config"
 SESSION_DIR = "sessions"
 LOG_FILE = "logs.txt"
 
+# Couleurs ANSI
+GREEN = "\033[92m"
+RED = "\033[91m"
+YELLOW = "\033[93m"
+LIGHT_RED = "\033[91m"
+RESET = "\033[0m"
+
 os.makedirs(SESSION_DIR, exist_ok=True)
 
-def log(message):
+def timestamp():
+    return f"{GREEN}[TS {datetime.datetime.now().strftime('%H:%M:%S')}] {RESET}"
+
+def log(message, level="info"):
+    colors = {
+        "info": YELLOW,
+        "success": GREEN,
+        "error": RED,
+        "fatal": LIGHT_RED
+    }
+    color = colors.get(level, RESET)
+    final = f"{timestamp()}{color}{message}{RESET}"
     with open(LOG_FILE, "a") as f:
-        f.write(message + "\n")
-    print(message)
+        f.write(final + "\n")
+    print(final)
 
 def load_profiles():
     profiles = []
@@ -22,10 +42,10 @@ def load_profiles():
             try:
                 with open(path, "r") as f:
                     data = json.load(f)
-                    data["__file__"] = file  # pour afficher en cas d'erreur
+                    data["__file__"] = file
                     profiles.append(data)
             except Exception as e:
-                log(f"[!] Erreur lecture {file}: {e}")
+                log(f"[!] Erreur lecture {file}: {e}", level="fatal")
     return profiles
 
 def session_file_path(username):
@@ -38,13 +58,13 @@ def use_existing_session(username):
     try:
         with open(path, "r") as f:
             session_settings = json.load(f)
-        log(f"[...] Test de session existante pour {username}")
+        log(f"[...] Test de session existante pour {username}", level="info")
         api = Client(username, None, settings=session_settings)
         api.current_user()
-        log(f"[✓] Session valide : {username}")
+        log(f"[✓] Session valide : {username}", level="success")
         return api
     except Exception as e:
-        log(f"[X] Session invalide : {username} → suppression")
+        log(f"[X] Session invalide : {username} → suppression", level="error")
         os.remove(path)
         return None
 
@@ -56,7 +76,7 @@ def login_and_create_session(profile):
     user_agent = profile.get("user_agent", "")
 
     if not username or not password:
-        log(f"[!] Profil invalide ({profile.get('__file__', 'inconnu')}) : username ou password manquant")
+        log(f"[!] Profil invalide ({profile.get('__file__', 'inconnu')}) : username ou password manquant", level="fatal")
         return None
 
     settings = {
@@ -69,30 +89,30 @@ def login_and_create_session(profile):
         "user_agent": user_agent
     }
 
-    log(f"[+] Tentative de connexion : {username}")
+    log(f"[+] Tentative de connexion : {username}", level="info")
     try:
         api = Client(username, password, settings=settings)
         with open(session_file_path(username), "w") as f:
             json.dump(api.settings, f)
-        log(f"[✓] Connexion réussie & session sauvegardée : {username}")
+        log(f"[✓] Connexion réussie & session sauvegardée : {username}", level="success")
         return api
     except ClientError as e:
-        log(f"[X] Erreur de connexion : {username} → {e}")
+        log(f"[X] Erreur de connexion : {username} → {e}", level="error")
     except Exception as e:
-        log(f"[!] Erreur inattendue : {username} → {e}")
+        log(f"[!] Erreur inattendue : {username} → {e}", level="fatal")
     return None
 
 def main():
-    log("=== Lancement de la génération de sessions ===")
+    log("=== Lancement de la génération de sessions ===", level="info")
     profiles = load_profiles()
     for profile in profiles:
         username = profile.get("username", "inconnu")
-        log(f"\n=== Traitement : {username} ===")
+        log(f"\n=== Traitement : {username} ===", level="info")
         api = use_existing_session(username)
         if not api:
             api = login_and_create_session(profile)
         time.sleep(3)
-    log("=== Fin du script ===\n")
+    log("=== Fin du script ===\n", level="info")
 
 if __name__ == "__main__":
     main()
