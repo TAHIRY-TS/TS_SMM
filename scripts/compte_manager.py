@@ -7,6 +7,8 @@ import shutil
 import uuid
 import subprocess
 import re
+import random
+import string
 from datetime import datetime, timezone
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -70,7 +72,9 @@ def get_prop(prop):
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
     except Exception:
         return None
-
+def generate_mid():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=24))
+    
 def get_android_device_info():
     screen_size = '1080x1920'
     density = '420'
@@ -99,8 +103,17 @@ def get_android_device_info():
         "request_id": str(uuid.uuid4()),
         "tray_session_id": str(uuid.uuid4())
     }
+    config = {
+        "mid": generate_mid(),
+        "ig_u_rur": None,
+        "ig_www_claim": "0",
+        "authorization_data": {
+            "ds_user_id": str(uuid.uuid4().int)[:11],
+            "sessionid": f"{str(uuid.uuid4().int)[:11]}%3A{uuid.uuid4().hex[:16]}%3A8%3AAY{uuid.uuid4().hex[:24]}"
+        }
+    }
 
-    device = {
+    device_settings = {
         "manufacturer": get_prop("ro.product.manufacturer"),
         "model": get_prop("ro.product.model"),
         "device": get_prop("ro.product.device"),
@@ -125,7 +138,8 @@ def get_android_device_info():
 
     return {
         "uuids": uuids,
-        "device_settings": device,
+        "device_settings": device_settings,
+        "config": config
         "user_agent": user_agent,
         "country": get_prop("persist.sys.country") or "FR",
         "country_code": 261,
@@ -157,15 +171,16 @@ def creer_config():
     profile = {
         "username": username,
         "password": password,
-        "uuid": str(uuid.uuid4()),
-        "device_info": info_data["device_settings"],
         "uuids": info_data["uuids"],
+        "config": info_data["config"],
+        "cookies": {},
+        "last_login": datetime.now().timestamp()
+        "device_settings": info_data["device_settings"],
         "user_agent": info_data["user_agent"],
         "country": info_data["country"],
         "country_code": info_data["country_code"],
         "locale": info_data["locale"],
         "timezone_offset": info_data["timezone_offset"],
-        "last_login": datetime.now().timestamp()
     }
 
     with open(filepath, 'w') as f:
