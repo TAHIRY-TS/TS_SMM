@@ -1,54 +1,94 @@
 import os
-import json
 import re
+import json
+import time
 import asyncio
-import subprocess
 import random
 import hashlib
+import subprocess
 from datetime import datetime
-from telethon.sync import TelegramClient, events
+from telethon.sync import TelegramClient
+from telethon.sessions import StringSession
+from telethon import events
 
+# ---------- Fonctions Utilitaires ----------
 def color(text, code):
     return f"\033[{code}m{text}\033[0m"
+
+def horloge():
+    return color(f"[TS {datetime.now().strftime('%H:%M:%S')}]", "1;36")
 
 def horloge_prefix():
     return color(f"[TS {datetime.now().strftime('%H:%M')}]", "1;34") + " "
 
-# Répertoires
+def loading_animation(message="Connexion"):
+    print(f"{horloge()} {message}", end="")
+    for _ in range(3):
+        print(".", end="", flush=True)
+        time.sleep(0.5)
+    print()
+
+# ---------- Répertoires ----------
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
-CONFIG_DIR = os.path.join(PROJECT_DIR, 'scripts', 'config')
-CONFIG_USERS_PATH = CONFIG_DIR  # Le dossier contient tous les *.json utilisateurs
+PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR))
+CONFIG_DIR = os.path.join(PROJECT_DIR, 'config')
+LOGS_DIR = os.path.join(SCRIPT_DIR, 'logs')
+DATA_DIR = os.path.join(SCRIPT_DIR, 'data')
 CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
-LOGS_DIR = os.path.join(SCRIPT_DIR, 'logs')
-DATA_DIR = os.path.join(SCRIPT_DIR, 'data')
 FOLLOW_SCRIPT_PATH = os.path.join(DATA_DIR, 'follow_action.py')
 LIKE_SCRIPT_PATH = os.path.join(DATA_DIR, 'like_action.py')
 ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 
+os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(LOGS_DIR, exist_ok=True)
 
-# Chargement config principale
+# ---------- Chargement ou Connexion ----------
+def se_connecter_et_sauvegarder(api_id, api_hash, phone):
+    try:
+        with TelegramClient(StringSession(), api_id, api_hash) as client:
+            client.start(phone)
+            session_string = client.session.save()
+            config = {
+                "api_id": api_id,
+                "api_hash": api_hash,
+                "session": session_string
+            }
+            with open(CONFIG_PATH, "w") as f:
+                json.dump(config, f, indent=4)
+            print(f"{horloge()} Connexion réussie et session sauvegardée")
+    except Exception as e:
+        print(f"{horloge()} Erreur de connexion : {e}")
+        exit()
+
+# ---------- Lecture Config et Initialisation Client ----------
 try:
     with open(CONFIG_PATH) as f:
         config = json.load(f)
         api_id = config["api_id"]
         api_hash = config["api_hash"]
-        min_delay = config.get("min_delay", 5)
-        max_delay = config.get("max_delay", 15)
-except Exception as e:
-    with open(ERROR_LOG_PATH, "a") as f:
-        f.write(f"[CONFIG ERROR] {datetime.now()} - {e}\n")
-    raise SystemExit("[❌] Erreur lors du chargement de la configuration principale.")
+        session_str = config["session"]
+except:
+    print(f"{horloge()} Aucune session valide. Connexion requise.")
+    api_id = int(input(f"{horloge()} Entrez API ID : "))
+    api_hash = input(f"{horloge()} Entrez API HASH : ")
+    phone = input(f"{horloge()} Entrez numéro de téléphone : ")
+    loading_animation("Connexion")
+    se_connecter_et_sauvegarder(api_id, api_hash, phone)
+    with open(CONFIG_PATH) as f:
+        config = json.load(f)
+        session_str = config["session"]
 
-# Chargement utilisateurs depuis scripts/config/*.json
+# ---------- Initialisation Client ----------
+client = TelegramClient(StringSession(session_str), api_id, api_hash)
+
+# ---------- Chargement utilisateurs depuis config/*.json ----------
 def charger_utilisateurs():
     utilisateurs = []
-    for fichier in os.listdir(CONFIG_USERS_PATH):
+    for fichier in os.listdir(CONFIG_DIR):
         if fichier.endswith(".json") and fichier not in ["config.json", "selected_user.json", "task_data.txt"]:
-            chemin = os.path.join(CONFIG_USERS_PATH, fichier)
+            chemin = os.path.join(CONFIG_DIR, fichier)
             try:
                 with open(chemin, encoding="utf-8") as f:
                     data = json.load(f)
@@ -56,15 +96,13 @@ def charger_utilisateurs():
                         utilisateurs.append(data)
             except Exception as e:
                 with open(ERROR_LOG_PATH, "a") as err:
-                    err.write(f"[UTILISATEUR LOAD ERROR] {fichier} : {e}\n")
+                    err.write(f"[UTILISATEUR ERROR] {fichier} : {e}\n")
     return utilisateurs
 
 utilisateurs = charger_utilisateurs()
 utilisateur_actuel = 0
 
-client = TelegramClient("session_smmkingdom", api_id, api_hash)
-
-# Extraction infos tâche
+# ---------- Fonctions Tâche ----------
 def extraire_infos(message):
     lien_match = re.search(r'https://www\.instagram\.com/([a-zA-Z0-9_.]+)/', message)
     action_match = re.search(r'Action\s*:\s*(Follow|Like)', message, re.IGNORECASE)
@@ -74,7 +112,6 @@ def extraire_infos(message):
         return username, lien_match.group(0), action
     return None, None, None
 
-# Logs
 def journaliser(message):
     date_str = datetime.now().strftime("%Y-%m-%d")
     timestamp = datetime.now().strftime("%H:%M:%S")
@@ -86,26 +123,23 @@ def log_erreur(erreur):
     with open(ERROR_LOG_PATH, "a", encoding="utf-8") as f:
         f.write(f"[{datetime.now()}] {erreur}\n")
 
-# Envoyer tâche
 async def envoyer_tache():
     global utilisateur_actuel
     if utilisateur_actuel >= len(utilisateurs):
         utilisateur_actuel = 0
-    await asyncio.sleep(random.randint(min_delay, max_delay))
+    await asyncio.sleep(random.randint(5, 15))
     try:
         await client.send_message("SmmKingdomTasksBot", "📝Tasks📝")
     except Exception as e:
-        log_erreur(f"Erreur envoi 📝Tasks📝 : {e}")
+        log_erreur(f"Erreur envoi Tasks : {e}")
 
-# Exécuter action
 def executer_action(action):
     try:
-        script_path = FOLLOW_SCRIPT_PATH if "follow" in action else LIKE_SCRIPT_PATH
+        script_path = FOLLOW_SCRIPT_PATH if action == "follow" else LIKE_SCRIPT_PATH
         subprocess.run(["python3", script_path], check=True)
     except Exception as e:
-        log_erreur(f"Erreur executer_action({action}) : {e}")
+        log_erreur(f"Erreur exécution {action} : {e}")
 
-# Nettoyage
 async def nettoyage_fichiers():
     for path in [TASK_FILE_PATH, SELECTED_USER_PATH]:
         try:
@@ -114,7 +148,7 @@ async def nettoyage_fichiers():
         except Exception as e:
             log_erreur(f"[Nettoyage fichier {path}] {e}")
 
-# Gestion des messages Telegram
+# ---------- Gestion des messages ----------
 @client.on(events.NewMessage(from_users="SmmKingdomTasksBot"))
 async def handle_message(event):
     global utilisateur_actuel
@@ -126,7 +160,7 @@ async def handle_message(event):
             match = re.search(r"My Balance\s*:\s*\*\*(\d+(\.\d+)?)\s*cashCoins", message)
             if match:
                 solde = match.group(1)
-                print(f"[💵] Votre solde actuel : {solde} cashCoins")
+                print(f"[💵] Solde : {solde} cashCoins")
             await asyncio.sleep(3)
             await event.respond("📝Tasks📝")
             return
@@ -137,16 +171,12 @@ async def handle_message(event):
             return
 
         if "no active tasks" in message.lower() or "⭕️ Sorry" in message:
-            print(horloge_prefix() + color("[⛔] Aucun tâche sur ce compte", "1;33"))
+            print(horloge_prefix() + color("[⛔] Aucun tâche", "1;33"))
             await asyncio.sleep(3)
             await event.respond("Instagram")
             return
 
-        if any(phrase in message for phrase in [
-            "Current status of this account is Limited.",
-            "Please choose account",
-            "username for tasks"
-        ]):
+        if any(k in message for k in ["Current status", "choose account", "username for tasks"]):
             if utilisateur_actuel >= len(utilisateurs):
                 utilisateur_actuel = 0
             user = utilisateurs[utilisateur_actuel]
@@ -164,10 +194,8 @@ async def handle_message(event):
                 task_id = hashlib.md5(lien.encode()).hexdigest()[:10]
                 with open(TASK_FILE_PATH, "w") as f:
                     f.write(task_id)
-
                 emoji, couleur = ("➕", "1;36") if action == "follow" else ("❤️", "1;31")
                 print(horloge_prefix() + color(f"{emoji} Tâche : {lien} | ID : {task_id} | Action : {action.upper()}", couleur))
-
                 executer_action(action)
                 await event.respond("✅Completed")
                 await envoyer_tache()
@@ -177,15 +205,14 @@ async def handle_message(event):
     except Exception as e:
         log_erreur(f"[handle_message ERROR] {e}")
 
-# Main
+# ---------- Main Async ----------
 async def main():
-    try:
-        await client.start()
-        print(horloge_prefix() + color("[✓] Connecté à Telegram.", "1;32"))
-        await envoyer_tache()
-        await client.run_until_disconnected()
-    except Exception as e:
-        log_erreur(f"[main ERROR] {e}")
+    print(f"{horloge()} Connexion en cours...")
+    await client.start()
+    await client.run_until_disconnected()
 
-with client:
-    client.loop.run_until_complete(main())
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print(f"{horloge()} Fermeture...")
