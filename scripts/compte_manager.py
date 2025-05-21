@@ -14,6 +14,10 @@ LOG_FILE = 'history.log'
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
+def titre_section(titre):
+    print(f"\n\033[1;35m{'=' * 40}")
+    print(f"{titre.center(40)}")
+    print(f"{'=' * 40}\033[0m\n")
 
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -103,7 +107,7 @@ def creer_config():
 
 def supprimer_compte():
     clear()
-    print("--- SUPPRIMER UN COMPTE ---")
+    print("SUPPRIMER UN COMPTE")
     username = input("Nom d'utilisateur à supprimer: ").strip()
     fichiers = [
         os.path.join(CONFIG_DIR, f"{username}.json"),
@@ -125,7 +129,7 @@ def supprimer_compte():
 def lister_comptes():
     clear()
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
-    print("--- PROFILS ENREGISTRÉS ---")
+    print("PROFILS ENREGISTRÉS")
     if not fichiers:
         print("Aucun profil enregistré.")
     else:
@@ -135,7 +139,7 @@ def lister_comptes():
 
 def nettoyer_sessions_orphelines():
     clear()
-    print("--- NETTOYAGE DES SESSIONS ORPHELINES ---")
+    print("NETTOYAGE DES SESSIONS ORPHELINES")
     configs = [f.replace('.json', '') for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
     sessions = [f for f in os.listdir(SESSION_DIR) if f.endswith('_session.json')]
     supprimés = 0
@@ -157,7 +161,7 @@ def nettoyer_sessions_orphelines():
 def menu():
     while True:
         clear()
-        print("\033[1;36m========== MENU PRINCIPAL ==========\033[0m")
+        print("GESTION DES COMPTES")
         print("\n1. Ajouter un compte")
         print("2. Supprimer un compte")
         print("3. Lister les comptes")
