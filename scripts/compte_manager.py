@@ -261,6 +261,7 @@ def menu():
         print("2. Supprimer un compte")
         print("3. Lister les comptes")
         print("4. Nettoyer les sessions orphelines")
+        print("5. Reconnection du compte")
         print("0. Quitter")
 
         choix = safe_input("\nChoix: ").strip()
@@ -273,6 +274,8 @@ def menu():
             lister_comptes()
         elif choix == "4":
             nettoyer_sessions_orphelines()
+        elif choix == "5":
+            python3 session_creator.py
         elif choix == "0":
             print("\nAu revoir.")
             break
