@@ -19,6 +19,7 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 
 
 def titre_section(titre):
+    subprocess.call(['./assets/logo.sh'])
     titre_formate = f" {titre.upper()} "
     largeur = 50  # largeur fixe pour un centrage parfait
     print(f"\n\033[1;35m╔{'═' * largeur}╗\033[0m")
