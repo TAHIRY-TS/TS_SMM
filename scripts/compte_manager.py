@@ -225,27 +225,35 @@ def extract_session(username):
 
 def main_menu():
     while True:
-        print(""" ========== MENU ==========
+        print("\n\033[1;36m╔═════════════════════════════════════════╗\033[0m\n")
+        print("\n\033[1;36m|           GESTION DE COMPTES             |\033[0m")
+        print("\033[1;36m╚═════════════════════════════════════════╝\033[0m\n")
+
 1. Ajouter un compte
 2. Tester les comptes
 3. Supprimer un compte
 4. Lister les comptes
 5. Extraire session
-6. Quitter
+0. Quitter
 """)
         choix = input("Choix: ")
         if choix == '1':
             add_account()
+            os.system('clear')
         elif choix == '2':
             test_accounts()
+            os.system('clear')
         elif choix == '3':
             delete_account()
+            os.system('clear')
         elif choix == '4':
             list_accounts()
+            os.system('clear')
         elif choix == '5':
             username = input("Nom d'utilisateur: ")
             extract_session(username)
-        elif choix == '6':
+            os.system('clear')
+        elif choix == '0':
             break
         else:
             erreur("Choix invalide.")
