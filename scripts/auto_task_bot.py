@@ -8,7 +8,6 @@ import hashlib
 from datetime import datetime
 from telethon.sync import TelegramClient, events
 
-# Terminal style
 def color(text, code):
     return f"\033[{code}m{text}\033[0m"
 
@@ -19,8 +18,8 @@ def horloge_prefix():
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 CONFIG_DIR = os.path.join(PROJECT_DIR, 'scripts', 'config')
-CONFIG_PATH = os.path.join(PROJECT_DIR, 'config', 'config.json')
-USER_PATH = os.path.join(CONFIG_DIR, '{username}.json')
+CONFIG_USERS_DIR = os.path.join(CONFIG_DIR, 'utilisateur.json')  # Ce dossier contient les JSON utilisateurs
+CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 TASK_FILE_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
 LOGS_DIR = os.path.join(SCRIPT_DIR, 'logs')
@@ -30,47 +29,43 @@ LIKE_SCRIPT_PATH = os.path.join(DATA_DIR, 'like_action.py')
 ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 
 os.makedirs(LOGS_DIR, exist_ok=True)
-os.makedirs(CONFIG_DIR, exist_ok=True)
+os.makedirs(CONFIG_USERS_DIR, exist_ok=True)
 
-# Chargement des configurations
+# Chargement config principale
 try:
     with open(CONFIG_PATH) as f:
         config = json.load(f)
         api_id = config["api_id"]
         api_hash = config["api_hash"]
-
-    with open(USER_PATH) as f:
-        {username} = json.load(f)
-        min_delay = config1.get("min_delay", 5)
-        max_delay = config1.get("max_delay", 15)
-
+        min_delay = config.get("min_delay", 5)
+        max_delay = config.get("max_delay", 15)
 except Exception as e:
     with open(ERROR_LOG_PATH, "a") as f:
         f.write(f"[CONFIG ERROR] {datetime.now()} - {e}\n")
-    raise SystemExit("[❌] Erreur lors du chargement des configs.")
+    raise SystemExit("[❌] Erreur lors du chargement de la configuration principale.")
 
-# Détection automatique des utilisateurs depuis les fichiers JSON dans config/
+# Chargement utilisateurs depuis utilisateur.json/
 def charger_utilisateurs():
-    users = []
-    for fichier in os.listdir(CONFIG_DIR):
-        if fichier.endswith(".json") and fichier not in ["config.json", "{username}.json", "selected_user.json"]:
-            chemin = os.path.join(CONFIG_DIR, fichier)
+    utilisateurs = []
+    for fichier in os.listdir(CONFIG_USERS_DIR):
+        if fichier.endswith(".json"):
+            chemin = os.path.join(CONFIG_USERS_DIR, fichier)
             try:
-                with open(chemin) as f:
+                with open(chemin, encoding="utf-8") as f:
                     data = json.load(f)
-                    if "username" in data:
-                        users.append({"username": data["username"]})
+                    if "username" in data and "password" in data:
+                        utilisateurs.append(data)
             except Exception as e:
                 with open(ERROR_LOG_PATH, "a") as err:
                     err.write(f"[UTILISATEUR LOAD ERROR] {fichier} : {e}\n")
-    return users
+    return utilisateurs
 
 utilisateurs = charger_utilisateurs()
 utilisateur_actuel = 0
 
 client = TelegramClient("session_smmkingdom", api_id, api_hash)
 
-# Extraction des infos
+# Extraction infos tâche
 def extraire_infos(message):
     lien_match = re.search(r'https://www\.instagram\.com/([a-zA-Z0-9_.]+)/', message)
     action_match = re.search(r'Action\s*:\s*(Follow|Like)', message, re.IGNORECASE)
@@ -120,7 +115,7 @@ async def nettoyage_fichiers():
         except Exception as e:
             log_erreur(f"[Nettoyage fichier {path}] {e}")
 
-# Gestion des messages
+# Gestion des messages Telegram
 @client.on(events.NewMessage(from_users="SmmKingdomTasksBot"))
 async def handle_message(event):
     global utilisateur_actuel
@@ -155,13 +150,13 @@ async def handle_message(event):
         ]):
             if utilisateur_actuel >= len(utilisateurs):
                 utilisateur_actuel = 0
-            user = utilisateurs[utilisateur_actuel]["username"]
+            user = utilisateurs[utilisateur_actuel]
             utilisateur_actuel += 1
-            print(horloge_prefix() + color(f"[→] Username : {user}", "1;36"))
+            print(horloge_prefix() + color(f"[→] Username : {user['username']}", "1;36"))
             with open(SELECTED_USER_PATH, 'w') as su:
-                json.dump({"username": user}, su)
+                json.dump(user, su)
             await asyncio.sleep(3)
-            await event.respond(user)
+            await event.respond(user["username"])
             return
 
         if "Link" in message and ("Follow" in message or "Like" in message):
