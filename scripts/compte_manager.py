@@ -8,11 +8,12 @@ import subprocess
 import re
 from datetime import datetime
 
+PROJECT_DIR = os.path.dirname(...)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_DIR = os.path.join(SCRIPT_DIR, 'config')
 SESSION_DIR = os.path.join(SCRIPT_DIR, 'sessions')
 LOG_FILE = os.path.join(SCRIPT_DIR, 'history.log')
-LOGO_PATH = os.path.join(SCRIPT_DIR, 'assets/logo.sh')
+LOGO_PATH = os.path.join(PROJECT_DIR, 'assets/logo.sh')
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
