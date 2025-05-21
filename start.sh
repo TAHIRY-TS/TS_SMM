@@ -83,11 +83,10 @@ afficher_cadre() {
 
 # Afficher les options
 afficher_options() {
-    echo -e "║ ${VERT}1.${RESET} Se connecter à Telegram                          ║"
-    echo -e "║ ${MAGENTA}2.${RESET} Se connetion à Instagram                         ║"
-    echo -e "║ ${CYAN}3.${RESET} Lancer l'autoclick SMM                           ║"
-    echo -e "║ ${JAUNE}4.${RESET} Lancer une tâche manuellement                    ║"
-    echo -e "║ ${VERT}5.${RESET} Mise à jour                                      ║"
+    echo -e "║ ${MAGENTA}1.${RESET} Se connetion à Instagram                         ║"
+    echo -e "║ ${CYAN}2.${RESET} Lancer l'autoclick SMM                           ║"
+    echo -e "║ ${JAUNE}3.${RESET} Lancer une tâche manuellement                    ║"
+    echo -e "║ ${VERT}4.${RESET} Mise à jour                                      ║"
     echo -e "║ ${BLEU}10.${RESET} Follow                                          ║"
     echo -e "║ ${BLEU}0.${RESET} Quitter                                          ║"
 }
@@ -112,24 +111,18 @@ menu_principal() {
 
     case $choix in
         1)
-            echo -e "${CYAN}Connexion à Telegram...${RESET}"
-            termux-open-url "https://my.telegram.org"
-            [[ -f scripts/telegram_connect.py ]] && python3 scripts/telegram_connect.py
-            ;;
-
-        2)
             echo -e "${CYAN}Gestion de compte Instagram...${RESET}"
             [[ -f scripts/compte_manager.py ]] && python3 scripts/compte_manager.py
             ;;
-        3)
+        2)
             echo -e "${CYAN}Lancement de l'autoclick SMM...${RESET}"
             [[ -f scripts/auto_task_bot.py ]] && python3 scripts/auto_task_bot.py
             ;;
-        4)
+        3)
             echo -e "${CYAN}Lancement d'une tâche manuellement...${RESET}"
             [[ -f main/introxt_Instagram.sh ]] && bash main/introxt_Instagram.sh 
             ;;
-        5)
+        4)
             echo -e "${CYAN}Mise à jour...${RESET}"
             [[ -f main/iv.sh ]] && bash main/iv.sh
             ;;
