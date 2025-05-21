@@ -29,7 +29,7 @@ LIKE_SCRIPT_PATH = os.path.join(DATA_DIR, 'like_action.py')
 ERROR_LOG_PATH = os.path.join(LOGS_DIR, 'errors.txt')
 
 os.makedirs(LOGS_DIR, exist_ok=True)
-os.makedirs(CONFIG_USERS_DIR, exist_ok=True)
+os.makedirs(CONFIG_USERS_PATH, exist_ok=True)
 
 # Chargement config principale
 try:
