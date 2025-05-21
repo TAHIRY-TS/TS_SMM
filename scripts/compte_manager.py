@@ -139,7 +139,7 @@ def get_android_device_info():
     return {
         "uuids": uuids,
         "device_settings": device_settings,
-        "config": config
+        "config": config,
         "user_agent": user_agent,
         "country": get_prop("persist.sys.country") or "FR",
         "country_code": 261,
@@ -174,7 +174,7 @@ def creer_config():
         "uuids": info_data["uuids"],
         "config": info_data["config"],
         "cookies": {},
-        "last_login": datetime.now().timestamp()
+        "last_login": datetime.now().timestamp(),
         "device_settings": info_data["device_settings"],
         "user_agent": info_data["user_agent"],
         "country": info_data["country"],
