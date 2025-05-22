@@ -72,10 +72,11 @@ def get_prop(prop):
     try:
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
     except Exception:
-        return None
+        return ''
+
 def generate_mid():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=24))
-    
+
 def get_android_device_info():
     screen_size = '1080x1920'
     density = '420'
@@ -253,6 +254,12 @@ def nettoyer_sessions_orphelines():
 
     safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
+def reconnexion_compte():
+    clear()
+    titre_section("RECONNECTION DU COMPTE")
+    print("\nFonction en cours de développement...")
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
+
 def menu():
     while True:
         clear()
@@ -275,19 +282,14 @@ def menu():
         elif choix == "4":
             nettoyer_sessions_orphelines()
         elif choix == "5":
-             try:
-                subprocess.run([sys.executable, "session_creator.py"])
-            except Exception as e:
-                print(f"[X] Erreur lors de l'exécution : {e}")
+            reconnexion_compte()
         elif choix == "0":
-            print("\nAu revoir.")
+            clear()
+            print("À bientôt !")
             break
         else:
-            erreur("\nChoix invalide.")
-            safe_input("\nAppuyez sur Entrée...")
+            erreur("Choix invalide.")
+            safe_input("\nAppuyez sur Entrée pour réessayer...")
 
 if __name__ == "__main__":
-    try:
-        menu()
-    except KeyboardInterrupt:
-        print("\nArrêté par l'utilisateur.")
+    menu()
