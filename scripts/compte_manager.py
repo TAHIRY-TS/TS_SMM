@@ -253,13 +253,16 @@ def nettoyer_sessions_orphelines():
         info("\nAucune session orpheline.")
 
     safe_input("\nAppuyez sur Entrée pour revenir au menu...")
-
 def reconnexion_compte():
     clear()
     titre_section("RECONNECTION DU COMPTE")
-    print("\nFonction en cours de développement...")
-    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
+    subprocess.run(["python3", "autre_script.py"], check=True)
 
+    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
+    if not fichiers:
+        info("Aucun compte disponible.")
+        safe_input("\nAppuyez sur Entrée pour revenir...")
+        return
 def menu():
     while True:
         clear()
