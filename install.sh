@@ -26,6 +26,7 @@ for pkg in termux-api android-tools grep awk; do
     fi
 done
 pkg install python rust clang libffi openssl git -y
+pip install git+https://github.com/ping/instagram_private_api.git
 
 # Mise à jour de pip
 pip install --upgrade pip setuptools wheel
