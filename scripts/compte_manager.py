@@ -9,6 +9,7 @@ import subprocess
 import re
 import random
 import string
+import locale
 from datetime import datetime, timezone
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -20,7 +21,13 @@ LOGO_PATH = os.path.join(PROJECT_DIR, 'assets/logo.sh')
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
+open(LOG_FILE, 'a').close()
 os.chmod(LOG_FILE, 0o600)
+
+fallback_version_code = "269000000"
+app_version = "269.0.0.18.75"
+chipset = "qcom"
+lang = locale.getdefaultlocale()[0] or "fr_FR"
 
 def check_cmd(cmd):
     return shutil.which(cmd) is not None
@@ -76,17 +83,18 @@ def get_prop(prop):
 
 def generate_mid():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=24))
+
 def refresh_rate():
     try:
-        dumpsys_display = subprocess.check_output(["dumpsys", "display"]).decode()
-        match = re.search(r'(?i)RefreshRate:\s*([\d.]+)', dumpsys_display)
+        output = subprocess.check_output(["dumpsys", "display"], encoding="utf-8")
+        match = re.search(r'(?i)RefreshRate:\s*([\d.]+)', output)
         if not match:
-            match = re.search(r'(?i)mode\s+\d+:\s+\d+x\d+\s+@\s+([\d.]+)Hz', dumpsys_display)
+            match = re.search(r'(?i)mode\s+\d+:\s+\d+x\d+\s+@\s+([\d.]+)Hz', output)
         if match:
             return f"{float(match.group(1)):.0f}Hz"
     except Exception as e:
         print(f"Erreur détection refresh rate : {e}")
-    return "60Hz"  # valeur par défaut
+    return "60Hz"
 
 def get_android_device_info():
     try:
@@ -95,26 +103,17 @@ def get_android_device_info():
         version_code = version_code_match.group(1) if version_code_match else fallback_version_code
     except:
         version_code = fallback_version_code
+
     try:
-        wm_size = subprocess.check_output(["wm", "size"]).decode()
-        wm_density = subprocess.check_output(["wm", "density"]).decode()
+        wm_size = subprocess.check_output(["wm", "size"], encoding='utf-8')
+        wm_density = subprocess.check_output(["wm", "density"], encoding='utf-8')
         resolution_match = re.search(r'Physical size: (\d+x\d+)', wm_size)
         dpi_match = re.search(r'Physical density: (\d+)', wm_density)
         resolution = resolution_match.group(1) if resolution_match else "1080x1920"
         dpi = f"{dpi_match.group(1)}dpi" if dpi_match else "420dpi"
-    if check_cmd('wm'):
-        try:
-            screen_size = subprocess.check_output(['wm', 'size'], encoding='utf-8').strip().split()[-1]
-        except Exception:
-            pass
-
-    if check_cmd('dumpsys'):
-        try:
-            dpi_output = subprocess.check_output(['dumpsys', 'display'], encoding='utf-8')
-            match = re.search(r'Physical density: (\d+)', dpi_output)
-            density = match.group(1) if match else '420'
-        except Exception:
-            pass
+    except:
+        resolution = "1080x1920"
+        dpi = "420dpi"
 
     timezone_offset = int(datetime.now(timezone.utc).astimezone().utcoffset().total_seconds())
 
@@ -127,6 +126,7 @@ def get_android_device_info():
         "request_id": str(uuid.uuid4()),
         "tray_session_id": str(uuid.uuid4())
     }
+
     config = {
         "mid": generate_mid(),
         "ig_u_rur": None,
@@ -157,13 +157,15 @@ def get_android_device_info():
         "build_id": get_prop("ro.build.display.id"),
         "build_tags": get_prop("ro.build.tags"),
         "build_type": get_prop("ro.build.type"),
-        "lang": locale.getdefaultlocale()[0] or "fr_FR"
+        "lang": lang
     }
+
     user_agent = (
-            f"Instagram {app_version} Android ({android_version}/{android_release}; "
-            f"{dpi}; {resolution}; {manufacturer}; {model}; {device}; {chipset}; {lang}; {version_code})"
-        )
-    user_agent = f"Instagram 269.0.0.18.75 Android ({device_settings['android_version']}/{device_settings['android_release']}; {device_settings['dpi']}dpi; {device_settings['resolution']}; {device_settings['brand']}; {device_settings['model']}; {device_settings['device']}; en_US)"
+        f"Instagram {app_version} Android ({device_settings['android_version']}/{device_settings['android_release']}; "
+        f"{dpi}; {resolution}; {device_settings['brand']}; {device_settings['model']}; {device_settings['device']}; "
+        f"{chipset}; {lang}; {version_code})"
+    )
+
     return {
         "uuids": uuids,
         "device_settings": device_settings,
