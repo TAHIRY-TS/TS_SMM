@@ -24,16 +24,19 @@ open(LOG_FILE, 'a').close()
 os.chmod(LOG_FILE, 0o600)
 
 app_version = "327.0.0.18.75"
-
+def normalize_locale(locale):
+    if not locale:
+        return "fr_FR"
+    return locale.replace('-', '_')
 def check_cmd(cmd):
     return shutil.which(cmd) is not None
+
 def titre_section(titre):
     if os.path.exists(LOGO_PATH):
         subprocess.call(['bash', LOGO_PATH])
     else:
-        print("\033[1;33m[AVERTISSEMENT]\033[0m Logo non trouvÃ©.")
+        print("\033[1;33m[AVERTISSEMENT]\033[0m Logo non trouvé.")
 
-    titre_formate = f" {titre.upper()} "
     largeur = 50
     terminal_width = shutil.get_terminal_size().columns
     padding = max((terminal_width - largeur) // 2, 0)
@@ -42,6 +45,7 @@ def titre_section(titre):
     print(f"\n{spaces}\033[1;35m╔{'═' * largeur}╗\033[0m")
     print(f"{spaces}\033[1;35m║ {titre.center(largeur - 2)} ║\033[0m")
     print(f"{spaces}\033[1;35m╚{'═' * largeur}╝\033[0m\n")
+
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
 
@@ -53,7 +57,7 @@ def log_action(action, username):
         log.write(f"{horloge()} {action.upper()} - {username}\n")
 
 def success(msg):
-    print(f"\033[1;32m{horloge()} [SUCCÃˆS]\033[0m {msg}")
+    print(f"\033[1;32m{horloge()} [SUCCÈS]\033[0m {msg}")
 
 def erreur(msg):
     print(f"\033[1;31m{horloge()} [ERREUR]\033[0m {msg}")
@@ -161,8 +165,7 @@ def get_android_device_info():
         "build_id": get_prop("ro.build.display.id"),
         "build_tags": get_prop("ro.build.tags"),
         "build_type": get_prop("ro.build.type"),
-        "lang": get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}"
-    }
+        "lang": normalize_locale(get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}")   }
 
     user_agent = (
         f"Instagram {app_version} Android ({device_settings['android_version']}/{device_settings['android_release']}; "
@@ -177,7 +180,7 @@ def get_android_device_info():
         "user_agent": user_agent,
         "country": get_prop("persist.sys.country") or get_prop("ro.product.locale.region") or "FR",
         "country_code": 261,
-        "locale": get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}" or "fr_FR",
+        "locale": normalize_locale(get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}") or "fr_FR",
         "timezone_offset": tz_offset
     }
 
