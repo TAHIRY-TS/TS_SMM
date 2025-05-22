@@ -6,7 +6,7 @@ import random
 from instagram_private_api import Client, ClientError
 
 # Dossiers
-CONFIG_DIR = "config"
+CONFIG_DIR = "scripts/config"
 SESSION_DIR = "sessions"
 LOG_FILE = "logs.txt"
 
