@@ -254,15 +254,14 @@ def nettoyer_sessions_orphelines():
 
     safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 def reconnexion_compte():
-    clear()
-    titre_section("RECONNECTION DU COMPTE")
-    subprocess.run(["python3", "session_creator.py"], check=True)
-
-    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
-    if not fichiers:
-        info("Aucun compte disponible.")
-        safe_input("\nAppuyez sur Entrée pour revenir...")
+    session_creator_path = os.path.join(SCRIPT_DIR, "session_creator.py")
+    if not os.path.exists(session_creator_path):
+        erreur("Le fichier session_creator.py est introuvable.")
         return
+    try:
+        subprocess.run(["python3", session_creator_path], check=True)
+    except subprocess.CalledProcessError as e:
+        erreur(f"Erreur lors de l'exécution de session_creator.py : {e}")
 def menu():
     while True:
         clear()
