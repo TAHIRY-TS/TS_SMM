@@ -17,15 +17,23 @@ def get_profiles():
     return [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
 
 def load_profile(path):
-    with open(path, 'r') as f:
-        return json.load(f)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Fichier introuvable : {path}")
+    if os.path.getsize(path) == 0:
+        raise ValueError(f"Fichier vide : {path}")
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Erreur de lecture JSON dans {path} : {e}")
 
 def save_session(path, settings):
     with open(path, 'w') as f:
         json.dump(settings, f)
 
 def sanitize_user_agent(agent):
-    pattern = r"Instagram \d+\.\d+\.\d+\.\d+ Android \d+/\d+; \d+dpi; \d+x\d+; [^;]+; [^;]+; [^;]+; [^;]+; [a-z]{2}_[A-Z]{2}"
+    # À améliorer selon tes besoins : ici, on retourne simplement l’agent brut
+    return agent
 
 def try_login(data, session_file):
     try:
@@ -63,9 +71,13 @@ def load_random_session():
     json_path = os.path.join(CONFIG_DIR, profile)
     session_path = json_path.replace('.json', '.session')
 
-    data = load_profile(json_path)
-    username = data['username']
+    try:
+        data = load_profile(json_path)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"{R}[✗] {e}{W}")
+        return None
 
+    username = data['username']
     print(f"{Y}[*] Tentative de chargement du profil : {username}...{W}")
     time.sleep(2)
 
