@@ -1,335 +1,148 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import os
 import json
-import shutil
 import uuid
-import subprocess
-import re
-import random
-import string
-import locale
-from datetime import datetime, timezone
+import time
+from getpass import getpass
+from datetime import datetime
+from instagram_private_api import Client, ClientCompatPatch, ClientError
 
-PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SCRIPT_DIR = os.path.join(PROJECT_DIR, 'scripts')
-CONFIG_DIR = os.path.join(SCRIPT_DIR, 'config')
-SESSION_DIR = os.path.join(SCRIPT_DIR, 'sessions')
-LOG_FILE = os.path.join(SCRIPT_DIR, 'history.log')
-LOGO_PATH = os.path.join(PROJECT_DIR, 'assets/logo.sh')
+CONFIG_DIR = 'config'
+SESSIONS_DIR = 'sessions'
+LOG_FILE = 'history.log'
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
-os.makedirs(SESSION_DIR, exist_ok=True)
-open(LOG_FILE, 'a').close()
-os.chmod(LOG_FILE, 0o600)
+os.makedirs(SESSIONS_DIR, exist_ok=True)
 
-fallback_version_code = "269000000"
-app_version = "269.0.0.18.75"
-chipset = "qcom"
-lang = locale.getdefaultlocale()[0] or "fr_FR"
-
-def check_cmd(cmd):
-    return shutil.which(cmd) is not None
-
-def titre_section(titre):
-    if os.path.exists(LOGO_PATH):
-        subprocess.call(['bash', LOGO_PATH])
-    else:
-        print("\033[1;33m[AVERTISSEMENT]\033[0m Logo non trouvé.")
-
-    titre_formate = f" {titre.upper()} "
-    largeur = 50
-    terminal_width = shutil.get_terminal_size().columns
-    padding = max((terminal_width - largeur) // 2, 0)
-    spaces = ' ' * padding
-
-    print(f"\n{spaces}\033[1;35m╔{'═' * largeur}╗\033[0m")
-    print(f"{spaces}\033[1;35m║{titre_formate.center(largeur)}║\033[0m")
-    print(f"{spaces}\033[1;35m╚{'═' * largeur}╝\033[0m\n")
-
-def clear():
-    os.system('clear' if os.name == 'posix' else 'cls')
-
-def horloge():
-    return datetime.now().strftime("[TS %H:%M:%S]")
-
-def log_action(action, username):
+def log_event(event):
     with open(LOG_FILE, 'a') as log:
-        log.write(f"{horloge()} {action.upper()} - {username}\n")
+        log.write(f"[TS {datetime.now().strftime('%H:%M:%S')}] {event}\n")
 
-def success(msg):
-    print(f"\033[1;32m{horloge()} [SUCCÈS]\033[0m {msg}")
-
-def erreur(msg):
-    print(f"\033[1;31m{horloge()} [ERREUR]\033[0m {msg}")
-
-def info(msg):
-    print(f"\033[1;34m{horloge()} [INFO]\033[0m {msg}")
-
-def safe_input(prompt):
+def get_device_info():
+    props = {}
     try:
-        return input(prompt)
-    except EOFError:
-        return ''
-
-def get_prop(prop):
-    if not check_cmd('getprop'):
-        return ''
-    try:
-        return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
+        props['manufacturer'] = os.popen('getprop ro.product.manufacturer').read().strip()
+        props['model'] = os.popen('getprop ro.product.model').read().strip()
+        props['android_version'] = os.popen('getprop ro.build.version.release').read().strip()
+        props['dpi'] = os.popen('wm density').read().split(":")[-1].strip()
+        resolution = os.popen("wm size").read().split(":")[-1].strip()
+        props['resolution'] = resolution if resolution else "1080x1920"
     except Exception:
-        return ''
-
-def generate_mid():
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=24))
-
-def refresh_rate():
-    try:
-        output = subprocess.check_output(["dumpsys", "display"], encoding="utf-8")
-        match = re.search(r'(?i)RefreshRate:\s*([\d.]+)', output)
-        if not match:
-            match = re.search(r'(?i)mode\s+\d+:\s+\d+x\d+\s+@\s+([\d.]+)Hz', output)
-        if match:
-            return f"{float(match.group(1)):.0f}Hz"
-    except Exception as e:
-        print(f"Erreur détection refresh rate : {e}")
-    return "60Hz"
-
-def lire_getprop(prop):
-    try:
-        return subprocess.check_output(["getprop", prop]).decode().strip()
-    except:
-        return None
-
-def get_android_device_info():
-    try:
-        dumpsys = subprocess.check_output(["dumpsys", "package", "com.instagram.android"]).decode()
-        version_code_match = re.search(r'versionCode=(\d+)', dumpsys)
-        version_code = version_code_match.group(1) if version_code_match else fallback_version_code
-    except:
-        version_code = fallback_version_code
-
-    try:
-        wm_size = subprocess.check_output(["wm", "size"], encoding='utf-8')
-        wm_density = subprocess.check_output(["wm", "density"], encoding='utf-8')
-        resolution_match = re.search(r'Physical size: (\d+x\d+)', wm_size)
-        dpi_match = re.search(r'Physical density: (\d+)', wm_density)
-        resolution = resolution_match.group(1) if resolution_match else "1080x1920"
-        dpi = f"{dpi_match.group(1)}dpi" if dpi_match else "420dpi"
-    except:
-        resolution = "1080x1920"
-        dpi = "420dpi"
-
-    timezone_offset = int(datetime.now(timezone.utc).astimezone().utcoffset().total_seconds())
-
-    uuids = {
-        "phone_id": str(uuid.uuid4()),
-        "uuid": str(uuid.uuid4()),
-        "client_session_id": str(uuid.uuid4()),
-        "advertising_id": str(uuid.uuid4()),
-        "android_device_id": "android-" + uuid.uuid4().hex[:16],
-        "request_id": str(uuid.uuid4()),
-        "tray_session_id": str(uuid.uuid4())
-    }
-
-    config = {
-        "mid": generate_mid(),
-        "ig_u_rur": None,
-        "ig_www_claim": "0",
-        "authorization_data": {
-            "ds_user_id": str(uuid.uuid4().int)[:11],
-            "sessionid": f"{str(uuid.uuid4().int)[:11]}%3A{uuid.uuid4().hex[:16]}%3A8%3AAY{uuid.uuid4().hex[:24]}"
+        props = {
+            "manufacturer": "Xiaomi",
+            "model": "Redmi Note 7 Pro",
+            "android_version": "10",
+            "dpi": "440",
+            "resolution": "1080x2340"
         }
-    }
+    return props
 
-    device_settings = {
-        "manufacturer": get_prop("ro.product.manufacturer"),
-        "model": get_prop("ro.product.model"),
-        "device": get_prop("ro.product.device"),
-        "android_version": int(get_prop("ro.build.version.sdk") or 33),
-        "android_release": get_prop("ro.build.version.release"),
-        "android_version_code": version_code,
-        "dpi": dpi,
-        "resolution": resolution,
-        "refresh_rate": refresh_rate(),
-        "cpu": get_prop("ro.product.board"),
-        "board": get_prop("ro.product.board"),
-        "bootloader": get_prop("ro.bootloader") or "unknown",
-        "brand": get_prop("ro.product.brand"),
-        "product": get_prop("ro.product.name"),
-        "fingerprint": get_prop("ro.build.fingerprint"),
-        "radio_version": get_prop("gsm.version.baseband"),
-        "build_id": get_prop("ro.build.display.id"),
-        "build_tags": get_prop("ro.build.tags"),
-        "build_type": get_prop("ro.build.type"),
-        "lang": get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}"
-    }
-
-    user_agent = (
-        f"Instagram {app_version} Android ({device_settings['android_version']}/{device_settings['android_release']}; "
-        f"{dpi}; {resolution}; {device_settings['brand']}; {device_settings['model']}; {device_settings['device']}; "
-        f"{chipset}; {lang}; {version_code})"
-    )
-
-    return {
-        "uuids": uuids,
-        "device_settings": device_settings,
-        "config": config,
-        "user_agent": user_agent,
-        "country": get_prop("persist.sys.country") or get_prop("ro.product.locale.region") or "FR",
-        "country_code": 261,
-        "locale": get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}" or "fr_FR",
-        "timezone_offset": timezone_offset
-    }
-
-def creer_config():
-    clear()
-    titre_section("AJOUTER UN COMPTE")
-
-    username = safe_input("\nNom d'utilisateur Instagram: ").strip()
-    password = safe_input("Mot de passe: ").strip()
-
-    if not username or not password:
-        erreur("\nChamps obligatoires vides.")
-        safe_input("\nAppuyez sur Entrée pour continuer...")
-        return
-
-    filepath = os.path.join(CONFIG_DIR, f"{username}.json")
-
-    if os.path.exists(filepath):
-        erreur("\nCe compte existe déjà.")
-        safe_input("\nAppuyez sur Entrée pour continuer...")
-        return
-
-    info_data = get_android_device_info()
-
+def create_profile(username, password):
+    device_info = get_device_info()
     profile = {
         "username": username,
         "password": password,
-        "uuids": info_data["uuids"],
-        "config": info_data["config"],
-        "cookies": {},
-        "last_login": datetime.now().timestamp(),
-        "device_settings": info_data["device_settings"],
-        "user_agent": info_data["user_agent"],
-        "country": info_data["country"],
-        "country_code": info_data["country_code"],
-        "locale": info_data["locale"],
-        "timezone_offset": info_data["timezone_offset"],
+        "uuid": str(uuid.uuid4()),
+        "phone_id": str(uuid.uuid4()),
+        "device_id": f"android-{uuid.uuid4().hex[:16]}",
+        "device": device_info
     }
-
-    with open(filepath, 'w') as f:
+    config_path = os.path.join(CONFIG_DIR, f"{username}.json")
+    with open(config_path, 'w') as f:
         json.dump(profile, f, indent=4)
+    print(f"[✓] Profil créé : {config_path}")
+    log_event(f"[+] Profil créé pour {username}")
+    return profile
 
-    success(f"\nProfil enregistré pour {username}.")
-    log_action("créé", username)
-    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
+def load_profile(username):
+    config_path = os.path.join(CONFIG_DIR, f"{username}.json")
+    if not os.path.isfile(config_path):
+        print("[!] Profil introuvable.")
+        return None
+    with open(config_path) as f:
+        return json.load(f)
 
-def supprimer_compte():
-    clear()
-    titre_section("SUPPRIMER UN COMPTE")
+def save_session(api, username):
+    path = os.path.join(SESSIONS_DIR, f"{username}_session.session")
+    with open(path, 'w') as f:
+        json.dump(api.settings, f)
+    print(f"[✓] Session sauvegardée : {path}")
+    log_event(f"[+] Session sauvegardée pour {username}")
 
-    username = safe_input("Nom d'utilisateur à supprimer: ").strip()
-
-    fichiers = [
-        os.path.join(CONFIG_DIR, f"{username}.json"),
-        os.path.join(SESSION_DIR, f"{username}_session.json")
-    ]
-
-    confirm = safe_input(f"\nConfirmer suppression de {username} ? (o/n): ").lower()
-    if confirm != 'o':
-        print("Annulé.")
-        safe_input("\nAppuyez sur Entrée pour revenir au menu...")
+def login(username):
+    profile = load_profile(username)
+    if not profile:
         return
+    session_path = os.path.join(SESSIONS_DIR, f"{username}_session.session")
 
-    for f in fichiers:
-        if os.path.exists(f):
-            os.remove(f)
-            print(f"\n\033[1;31m[SUPPRIMÉ]\033[0m {f}")
-
-    log_action("supprimé", username)
-    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
-
-def lister_comptes():
-    clear()
-    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
-
-    titre_section("COMPTES ENREGISTRÉS")
-
-    if not fichiers:
-        print("\nAucun profil enregistré.")
-    else:
-        for f in fichiers:
-            print(" -", f.replace('.json', ''))
-
-    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
-
-def nettoyer_sessions_orphelines():
-    clear()
-    titre_section("NETTOYAGE DES SESSIONS ORPHELINES")
-
-    configs = [f.replace('.json', '') for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
-    sessions = [f for f in os.listdir(SESSION_DIR) if f.endswith('_session.json')]
-
-    supprimés = 0
-    for session_file in sessions:
-        username = session_file.replace('_session.json', '')
-        if username not in configs:
-            try:
-                os.remove(os.path.join(SESSION_DIR, session_file))
-                print(f"\n\033[1;33m[SUPPRIMÉ]\033[0m {session_file}")
-                supprimés += 1
-            except Exception as e:
-                erreur(f"\nErreur suppression {session_file}: {e}")
-
-    if supprimés:
-        info(f"{supprimés} session(s) supprimée(s).")
-    else:
-        info("\nAucune session orpheline.")
-
-    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
-def reconnexion_compte():
-    clear()
-    titre_section("RECONNECTION DU COMPTE")
-    session_creator_path = os.path.join(SCRIPT_DIR, "session_creator.py")
-    if not os.path.exists(session_creator_path):
-        erreur("Le fichier session_creator.py est introuvable.")
-        return
     try:
-        subprocess.run(["python3", session_creator_path], check=True)
-    except subprocess.CalledProcessError as e:
-        erreur(f"Erreur lors de l'exécution de session_creator.py : {e}")
+        if os.path.exists(session_path):
+            with open(session_path) as f:
+                settings = json.load(f)
+            print(f"[+] Tentative de reconnexion avec paramètres enregistrés : {username}")
+            api = Client(profile['username'], profile['password'], settings=settings)
+        else:
+            print(f"[+] Connexion initiale pour {username}...")
+            api = Client(
+                profile['username'],
+                profile['password'],
+                uuid=profile['uuid'],
+                phone_id=profile['phone_id'],
+                device_id=profile['device_id']
+            )
+            save_session(api, username)
+        print(f"[✓] Connexion réussie : @{api.authenticated_user_name}")
+        log_event(f"[✓] Connexion réussie : @{username}")
+    except ClientError as e:
+        print(f"[X] Erreur de connexion : {username} → {e}")
+        log_event(f"[X] Erreur de connexion : {username} → {e}")
+    except Exception as e:
+        print(f"[!] Exception inattendue : {e}")
+        log_event(f"[!] Exception inattendue : {username} → {e}")
+
+def list_profiles():
+    files = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
+    if not files:
+        print("Aucun profil trouvé.")
+    else:
+        for i, f in enumerate(files, 1):
+            print(f"{i}. {f.replace('.json','')}")
+
+def delete_profile(username):
+    config_file = os.path.join(CONFIG_DIR, f"{username}.json")
+    session_file = os.path.join(SESSIONS_DIR, f"{username}_session.session")
+    if os.path.exists(config_file):
+        os.remove(config_file)
+    if os.path.exists(session_file):
+        os.remove(session_file)
+    print(f"[✓] {username} supprimé.")
+    log_event(f"[-] Profil supprimé : {username}")
+
 def menu():
     while True:
-        clear()
-        titre_section("GESTION DES COMPTES")
-        print("\n1. Ajouter un compte")
-        print("2. Supprimer un compte")
-        print("3. Lister les comptes")
-        print("4. Nettoyer les sessions orphelines")
-        print("5. Reconnection du compte")
+        print("\n--- MENU GESTION DE COMPTES IG ---")
+        print("1. Ajouter un compte")
+        print("2. Tester une session")
+        print("3. Supprimer un compte")
+        print("4. Lister les comptes")
         print("0. Quitter")
 
-        choix = safe_input("\nChoix: ").strip()
-
-        if choix == "1":
-            creer_config()
-        elif choix == "2":
-            supprimer_compte()
-        elif choix == "3":
-            lister_comptes()
-        elif choix == "4":
-            nettoyer_sessions_orphelines()
-        elif choix == "5":
-            reconnexion_compte()
-        elif choix == "0":
-            clear()
-            print("À bientôt !")
+        choix = input("Choix : ")
+        if choix == '1':
+            username = input("Nom d'utilisateur : ").strip()
+            password = getpass("Mot de passe : ")
+            create_profile(username, password)
+        elif choix == '2':
+            username = input("Nom d'utilisateur : ").strip()
+            login(username)
+        elif choix == '3':
+            username = input("Nom d'utilisateur à supprimer : ").strip()
+            delete_profile(username)
+        elif choix == '4':
+            list_profiles()
+        elif choix == '0':
             break
         else:
-            erreur("Choix invalide.")
-            safe_input("\nAppuyez sur Entrée pour réessayer...")
+            print("[!] Choix invalide.")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     menu()
