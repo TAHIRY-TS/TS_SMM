@@ -83,5 +83,6 @@ if __name__ == '__main__':
         print(f"{G}[✓] Utilisateur connecté : @{me['user']['username']}{W}")
     else:
         print(f"{R}[!] Aucun compte n'a pu être connecté.{W}")
+        time.sleep(5)
 
     input(f"\n{Y}Appuie sur Entrée pour revenir au menu...{W}")
