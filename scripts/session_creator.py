@@ -2,6 +2,7 @@ import os
 import json
 import time
 import datetime
+import random
 from instagram_private_api import Client, ClientError
 
 # Dossiers
@@ -36,16 +37,17 @@ def log(message, level="info"):
 
 def load_profiles():
     profiles = []
-    for file in os.listdir(CONFIG_DIR):
-        if file.endswith(".json"):
-            path = os.path.join(CONFIG_DIR, file)
-            try:
-                with open(path, "r") as f:
-                    data = json.load(f)
-                    data["__file__"] = file
-                    profiles.append(data)
-            except Exception as e:
-                log(f"[!] Erreur lecture {file}: {e}", level="fatal")
+    files = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
+    random.shuffle(files)  # Choix aléatoire
+    for file in files:
+        path = os.path.join(CONFIG_DIR, file)
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+                data["__file__"] = file
+                profiles.append(data)
+        except Exception as e:
+            log(f"[!] Erreur lecture {file}: {e}", level="fatal")
     return profiles
 
 def session_file_path(username):
@@ -103,7 +105,7 @@ def login_and_create_session(profile):
     return None
 
 def main():
-    log("=== Lancement de la génération de sessions ===", level="info")
+    log("=== Démarrage : Création de sessions Instagram ===", level="info")
     profiles = load_profiles()
     for profile in profiles:
         username = profile.get("username", "inconnu")
@@ -111,8 +113,8 @@ def main():
         api = use_existing_session(username)
         if not api:
             api = login_and_create_session(profile)
-        time.sleep(3)
-    log("=== Fin du script ===\n", level="info")
+        time.sleep(2)  # Pause de 2 secondes entre chaque compte
+    log("=== Fin du traitement des comptes ===\n", level="info")
 
 if __name__ == "__main__":
     main()
