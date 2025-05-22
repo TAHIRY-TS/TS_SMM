@@ -3,7 +3,7 @@ from instagram_private_api import Client, ClientError
 
 R = '\033[91m'; G = '\033[92m'; Y = '\033[93m'; B = '\033[94m'; C = '\033[96m'; W = '\033[0m'
 BASE = os.path.abspath(os.path.dirname(__file__))
-CONFIG_DIR = os.path.join(BASE, 'scripts', 'config')
+CONFIG_DIR = os.path.join(BASE, 'config')
 
 def get_profiles():
     return [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
@@ -52,11 +52,13 @@ def load_random_session():
     data = load_profile(json_path)
     username = data['username']
 
+    time.sleep(3)  # Pause de 3 secondes avant chaque tentative
+
     if os.path.exists(session_path):
         try:
             with open(session_path, 'r') as f:
                 session = json.load(f)
-            api = Client(data['username'], data['password'], settings=session)
+            api = Client(username, data['password'], settings=session)
             api.current_user()
             print(f"{C}[•] Session valide : {username}{W}")
             return api
