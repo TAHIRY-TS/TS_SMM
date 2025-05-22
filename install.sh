@@ -16,6 +16,15 @@ horloge; echo -e "${yellow}Installation des dépendances Termux...${reset}"
 
 # Mise à jour des paquets
 pkg update -y && pkg upgrade -y
+
+for pkg in termux-api android-tools grep awk; do
+    if ! command -v $pkg >/dev/null 2>&1; then
+        echo -e "\033[1;33m[+] Installation de $pkg...\033[0m"
+        pkg install -y $pkg
+    else
+        echo -e "\033[1;32m[✓] $pkg déjà installé.\033[0m"
+    fi
+done
 pkg install python rust clang libffi openssl git -y
 
 # Mise à jour de pip
