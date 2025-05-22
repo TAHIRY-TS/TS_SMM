@@ -95,22 +95,26 @@ def refresh_rate():
     except Exception as e:
         print(f"Erreur détection refresh rate : {e}")
     return "60Hz"
-import subprocess
 
-def detecter_langue():
+def lire_getprop(prop):
     try:
-        # Lire la langue de l'appareil (ex: fr_FR, en_US, etc.)
-        langue = subprocess.check_output(["getprop", "persist.sys.locale"]).decode().strip()
-        if not langue:
-            # Alternative si persist.sys.locale est vide
-            langue = subprocess.check_output(["getprop", "ro.product.locale"]).decode().strip()
-        return langue
-    except Exception as e:
-        return f"Erreur : {e}"
+        return subprocess.check_output(["getprop", prop]).decode().strip()
+    except:
+        return None
 
-# Exemple d'utilisation
-langue_appareil = detecter_langue()
-print(f"Langue de l'appareil : {langue_appareil}")
+def detecter_langues_android():
+    langues = {
+        "Langue système": lire_getprop("persist.sys.locale") or lire_getprop("ro.product.locale"),
+        "Langue interface": lire_getprop("persist.sys.language"),
+        "Pays": lire_getprop("persist.sys.country"),
+        "Clavier actif": lire_getprop("secure.default_input_method")
+    }
+    return langues
+
+# Affichage
+infos = detecter_langues_android()
+for k, v in infos.items():
+    print(f"{k} : {v if v else 'Non détecté'}")
 
 def get_android_device_info():
     try:
@@ -173,7 +177,7 @@ def get_android_device_info():
         "build_id": get_prop("ro.build.display.id"),
         "build_tags": get_prop("ro.build.tags"),
         "build_type": get_prop("ro.build.type"),
-        "lang": langue_appareil
+        "lang": infos
     }
 
     user_agent = (
