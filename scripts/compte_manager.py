@@ -78,8 +78,19 @@ def generate_mid():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=24))
 
 def get_android_device_info():
-    screen_size = '1080x1920'
-    density = '420'
+    try:
+        dumpsys = subprocess.check_output(["dumpsys", "package", "com.instagram.android"]).decode()
+        version_code_match = re.search(r'versionCode=(\d+)', dumpsys)
+        version_code = version_code_match.group(1) if version_code_match else fallback_version_code
+    except:
+        version_code = fallback_version_code
+    try:
+        wm_size = subprocess.check_output(["wm", "size"]).decode()
+        wm_density = subprocess.check_output(["wm", "density"]).decode()
+        resolution_match = re.search(r'Physical size: (\d+x\d+)', wm_size)
+        dpi_match = re.search(r'Physical density: (\d+)', wm_density)
+        resolution = resolution_match.group(1) if resolution_match else "1080x1920"
+        dpi = f"{dpi_match.group(1)}dpi" if dpi_match else "420dpi"
     if check_cmd('wm'):
         try:
             screen_size = subprocess.check_output(['wm', 'size'], encoding='utf-8').strip().split()[-1]
@@ -121,8 +132,8 @@ def get_android_device_info():
         "device": get_prop("ro.product.device"),
         "android_version": int(get_prop("ro.build.version.sdk") or 33),
         "android_release": get_prop("ro.build.version.release"),
-        "dpi": density,
-        "resolution": screen_size,
+        "dpi": dpi,
+        "resolution": resolution,
         "refresh_rate": "60.0",
         "cpu": get_prop("ro.product.board"),
         "board": get_prop("ro.product.board"),
@@ -135,6 +146,10 @@ def get_android_device_info():
         "build_tags": get_prop("ro.build.tags"),
         "build_type": get_prop("ro.build.type")
     }
+    user_agent = (
+            f"Instagram {app_version} Android ({android_version}/{android_release}; "
+            f"{dpi}; {resolution}; {manufacturer}; {model}; {device}; {chipset}; {lang}; {version_code})"
+        )
     user_agent = f"Instagram 269.0.0.18.75 Android ({device_settings['android_version']}/{device_settings['android_release']}; {device_settings['dpi']}dpi; {device_settings['resolution']}; {device_settings['brand']}; {device_settings['model']}; {device_settings['device']}; en_US)"
     return {
         "uuids": uuids,
