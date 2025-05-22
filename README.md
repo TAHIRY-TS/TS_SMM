@@ -10,6 +10,6 @@ Dans Termux :
 ```bash
 pkg install git
 git clone https://github.com/TAHIRY-TS/TS_SMM.git
-cd TS-smm
+cd TS_SMM
 chmod +x *.sh
 bash install.sh
