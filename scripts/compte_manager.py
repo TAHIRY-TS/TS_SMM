@@ -183,7 +183,7 @@ def get_android_device_info():
 
 def creer_config():
     clear()
-    print("\n--- AJOUTER UN COMPTE ---\n")
+    titre_section("\nAJOUTER UN COMPTE\n")
     username = safe_input("Nom d'utilisateur Instagram: ").strip()
     password = safe_input("Mot de passe: ").strip()
 
@@ -224,7 +224,7 @@ def creer_config():
 
 def supprimer_compte():
     clear()
-    print("\n--- SUPPRIMER UN COMPTE ---\n")
+    titre_section("\nSUPPRIMER UN COMPTE\n")
     username = safe_input("Nom d'utilisateur à supprimer: ").strip()
 
     fichiers = [
