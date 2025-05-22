@@ -1,4 +1,5 @@
 #!/bin/bash
+termux-setup-storage
 clear
 
 # Définition des couleurs
