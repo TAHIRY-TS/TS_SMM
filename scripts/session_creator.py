@@ -1,4 +1,7 @@
-import os, json, random, time
+import os
+import json
+import random
+import time
 from instagram_private_api import Client, ClientError
 
 # Couleurs terminal
