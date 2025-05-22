@@ -27,6 +27,21 @@ app_version = "269.0.0.18.75"
 
 def check_cmd(cmd):
     return shutil.which(cmd) is not None
+def titre_section(titre):
+    if os.path.exists(LOGO_PATH):
+        subprocess.call(['bash', LOGO_PATH])
+    else:
+        print("\033[1;33m[AVERTISSEMENT]\033[0m Logo non trouvÃ©.")
+
+    titre_formate = f" {titre.upper()} "
+    largeur = 50
+    terminal_width = shutil.get_terminal_size().columns
+    padding = max((terminal_width - largeur) // 2, 0)
+    spaces = ' ' * padding
+
+    print(f"\n{spaces}\033[1;35mâ•”{'â•' * largeur}â•—\033[0m")
+    print(f"{spaces}\033[1;35mâ•‘{titre_formate.center(largeur)}â•‘\033[0m")
+    print(f"{spaces}\033[1;35mâ•š{'â•' * largeur}â•\033[0m\n")
 
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -39,7 +54,7 @@ def log_action(action, username):
         log.write(f"{horloge()} {action.upper()} - {username}\n")
 
 def success(msg):
-    print(f"\033[1;32m{horloge()} [SUCCÈS]\033[0m {msg}")
+    print(f"\033[1;32m{horloge()} [SUCCÃˆS]\033[0m {msg}")
 
 def erreur(msg):
     print(f"\033[1;31m{horloge()} [ERREUR]\033[0m {msg}")
@@ -54,9 +69,11 @@ def safe_input(prompt):
         return ''
 
 def get_prop(prop):
+    if not check_cmd('getprop'):
+        return ''
     try:
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
-    except:
+    except Exception:
         return ''
 
 def generate_mid():
