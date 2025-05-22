@@ -39,10 +39,9 @@ def titre_section(titre):
     padding = max((terminal_width - largeur) // 2, 0)
     spaces = ' ' * padding
 
-    print(f"\n{spaces}\033[1;35mâ•”{'â•' * largeur}â•—\033[0m")
-    print(f"{spaces}\033[1;35mâ•‘{titre_formate.center(largeur)}â•‘\033[0m")
-    print(f"{spaces}\033[1;35mâ•š{'â•' * largeur}â•\033[0m\n")
-
+    print(f"\n{spaces}\033[1;35m╔{'═' * largeur}╗\033[0m")
+    print(f"{spaces}\033[1;35m║ {titre.center(largeur - 2)} ║\033[0m")
+    print(f"{spaces}\033[1;35m╚{'═' * largeur}╝\033[0m\n")
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
 
