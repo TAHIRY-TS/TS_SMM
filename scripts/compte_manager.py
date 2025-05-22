@@ -23,7 +23,7 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 open(LOG_FILE, 'a').close()
 os.chmod(LOG_FILE, 0o600)
 
-app_version = "269.0.0.18.75"
+app_version = "327.0.0.18.75"
 
 def check_cmd(cmd):
     return shutil.which(cmd) is not None
@@ -108,7 +108,7 @@ def get_android_device_info():
         version_code_match = re.search(r'versionCode=(\d+)', dumpsys)
         version_code = version_code_match.group(1) if version_code_match else "999999"
     except:
-        version_code = "999999"
+        version_code = "999968"
 
     try:
         wm_size = subprocess.check_output(["wm", "size"], encoding='utf-8')
