@@ -344,8 +344,7 @@ def menu():
         elif choix == "5":
             reconnexion_compte()
         elif choix == "0":
-            clear()
-            print("A bientôt !")
+            print("\nA bientôt !")
             break
         else:
             erreur("Choix invalide.")
