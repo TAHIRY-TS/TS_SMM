@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import random
 import time
@@ -23,19 +24,22 @@ def save_session(path, settings):
     with open(path, 'w') as f:
         json.dump(settings, f)
 
+def sanitize_user_agent(agent):
+    pattern = r"Instagram \d+\.\d+\.\d+\.\d+ Android \d+/\d+; \d+dpi; \d+x\d+; [^;]+; [^;]+; [^;]+; [^;]+; [a-z]{2}_[A-Z]{2}"
+
 def try_login(data, session_file):
     try:
-        device = data['device_settings']
-        user_agent = data['user_agent']
-        uuids = data['uuids']
-        username = data['username']
-        password = data['password']
+        device = data.get('device_settings', {})
+        uuids = data.get('uuids', {})
+        username = data.get('username')
+        password = data.get('password')
+        user_agent = sanitize_user_agent(data.get('user_agent', ''))
 
         api = Client(
             username, password,
-            device_id=uuids['android_device_id'],
-            guid=uuids['uuid'],
-            phone_id=uuids['phone_id'],
+            device_id=uuids.get('android_device_id'),
+            guid=uuids.get('uuid'),
+            phone_id=uuids.get('phone_id'),
             user_agent=user_agent,
             device=device
         )
@@ -44,6 +48,9 @@ def try_login(data, session_file):
         return api
     except ClientError as e:
         print(f"{R}[✗] Erreur de connexion : {e}{W}")
+        return None
+    except Exception as e:
+        print(f"{R}[✗] Erreur inattendue : {e}{W}")
         return None
 
 def load_random_session():
@@ -60,7 +67,7 @@ def load_random_session():
     username = data['username']
 
     print(f"{Y}[*] Tentative de chargement du profil : {username}...{W}")
-    time.sleep(3)
+    time.sleep(2)
 
     if os.path.exists(session_path):
         try:
