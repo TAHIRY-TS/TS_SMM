@@ -118,13 +118,27 @@ def login_and_create_session(profile):
 def main():
     log("=== Démarrage : Création de sessions Instagram ===", level="info")
     profiles = load_profiles()
+    sessions_valides = []
+
     for profile in profiles:
         username = profile.get("username", "inconnu")
         log(f"\n=== Traitement : {username} ===", level="info")
         api = use_existing_session(username)
         if not api:
             api = login_and_create_session(profile)
-        time.sleep(2)
+        if api:
+            sessions_valides.append(username)
+        time.sleep(5)
+
+    log("\n=== Résumé des comptes avec session valide ===", level="success")
+    if sessions_valides:
+        for username in sessions_valides:
+            print(f"{GREEN}[✓] {username}{RESET}")
+    else:
+        print(f"{RED}[X] Aucun compte valide{RESET}")
+
+    input(f"\n{YELLOW}Appuyez sur Entrée pour revenir en arrière...{RESET}")
+
     log("=== Fin du traitement des comptes ===\n", level="info")
 
 if __name__ == "__main__":
