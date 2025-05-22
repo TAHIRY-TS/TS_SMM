@@ -6,8 +6,8 @@ from getpass import getpass
 from datetime import datetime
 from instagram_private_api import Client, ClientCompatPatch, ClientError
 
-CONFIG_DIR = 'config'
-SESSIONS_DIR = 'sessions'
+CONFIG_DIR = 'scripts/config'
+SESSIONS_DIR = 'scripts/sessions'
 LOG_FILE = 'history.log'
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
