@@ -24,11 +24,25 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 open(LOG_FILE, 'a').close()
 os.chmod(LOG_FILE, 0o600)
 
-fallback_version_code = "269000000"
-app_version = "269.0.0.18.75"
-chipset = "qcom"
-lang = locale.getdefaultlocale()[0] or "fr_FR"
 
+app_version = "269.0.0.18.75"
+def get_chipset():
+    try:
+        props = subprocess.check_output(['getprop']).decode()
+        chipset = "Inconnu"
+
+        # Recherche du chipset dans les propriétés système
+        for line in props.splitlines():
+            if any(keyword in line for keyword in ["ro.board.platform", "ro.hardware", "ro.mediatek.platform", "ro.chipname"]):
+                parts = line.split(":")
+                if len(parts) == 2:
+                    value = parts[1].strip().strip("[]")
+                    if value:
+                        chipset = value
+                        break
+        return chipset
+    except Exception as e:
+        return f"Erreur: {str(e)}"
 def check_cmd(cmd):
     return shutil.which(cmd) is not None
 
@@ -93,7 +107,7 @@ def refresh_rate():
         if match:
             return f"{float(match.group(1)):.0f}Hz"
     except Exception as e:
-        print(f"Erreur dÃ©tection refresh rate : {e}")
+        print(f"Erreur détection refresh rate : {e}")
     return "60Hz"
 
 def lire_getprop(prop):
@@ -106,20 +120,15 @@ def get_android_device_info():
     try:
         dumpsys = subprocess.check_output(["dumpsys", "package", "com.instagram.android"]).decode()
         version_code_match = re.search(r'versionCode=(\d+)', dumpsys)
-        version_code = version_code_match.group(1) if version_code_match else fallback_version_code
-    except:
-        version_code = fallback_version_code
+        version_code = version_code_match.group(1)
 
     try:
         wm_size = subprocess.check_output(["wm", "size"], encoding='utf-8')
         wm_density = subprocess.check_output(["wm", "density"], encoding='utf-8')
         resolution_match = re.search(r'Physical size: (\d+x\d+)', wm_size)
         dpi_match = re.search(r'Physical density: (\d+)', wm_density)
-        resolution = resolution_match.group(1) if resolution_match else "1080x1920"
-        dpi = f"{dpi_match.group(1)}dpi" if dpi_match else "420dpi"
-    except:
-        resolution = "1080x1920"
-        dpi = "420dpi"
+        resolution = resolution_match.group(1) 
+        dpi = f"{dpi_match.group(1)}dpi"
 
     timezone_offset = int(datetime.now(timezone.utc).astimezone().utcoffset().total_seconds())
 
@@ -152,6 +161,7 @@ def get_android_device_info():
         "android_version_code": version_code,
         "dpi": dpi,
         "resolution": resolution,
+        "chipset": get_chipset(),
         "refresh_rate": refresh_rate(),
         "cpu": get_prop("ro.product.board"),
         "board": get_prop("ro.product.board"),
@@ -168,8 +178,8 @@ def get_android_device_info():
 
     user_agent = (
         f"Instagram {app_version} Android ({device_settings['android_version']}/{device_settings['android_release']}; "
-        f"{dpi}; {resolution}; {device_settings['brand']}; {device_settings['model']}; {device_settings['device']}; "
-        f"{chipset}; {lang}; {version_code})"
+        f"{device_settings['dpi']}; {device_settings['resolution']}; {device_settings['brand']}; {device_settings['model']}; {device_settings['device']}; "
+        f"{device_settings['chipset']}; {device_settings['lang']}; {version_code})"
     )
 
     return {
@@ -192,14 +202,14 @@ def creer_config():
 
     if not username or not password:
         erreur("\nChamps obligatoires vides.")
-        safe_input("\nAppuyez sur EntrÃ©e pour continuer...")
+        safe_input("\nAppuyez sur Entrée pour continuer...")
         return
 
     filepath = os.path.join(CONFIG_DIR, f"{username}.json")
 
     if os.path.exists(filepath):
-        erreur("\nCe compte existe dÃ©jÃ .")
-        safe_input("\nAppuyez sur EntrÃ©e pour continuer...")
+        erreur("\nCe compte existe déjà .")
+        safe_input("\nAppuyez sur Entrée pour continuer...")
         return
 
     info_data = get_android_device_info()
@@ -222,15 +232,15 @@ def creer_config():
     with open(filepath, 'w') as f:
         json.dump(profile, f, indent=4)
 
-    success(f"\nProfil enregistrÃ© pour {username}.")
-    log_action("crÃ©Ã©", username)
-    safe_input("\nAppuyez sur EntrÃ©e pour revenir au menu...")
+    success(f"\nProfil enregistré pour {username}.")
+    log_action("crée", username)
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
 def supprimer_compte():
     clear()
     titre_section("SUPPRIMER UN COMPTE")
 
-    username = safe_input("Nom d'utilisateur Ã  supprimer: ").strip()
+    username = safe_input("Nom d'utilisateur à supprimer: ").strip()
 
     fichiers = [
         os.path.join(CONFIG_DIR, f"{username}.json"),
@@ -239,31 +249,31 @@ def supprimer_compte():
 
     confirm = safe_input(f"\nConfirmer suppression de {username} ? (o/n): ").lower()
     if confirm != 'o':
-        print("AnnulÃ©.")
-        safe_input("\nAppuyez sur EntrÃ©e pour revenir au menu...")
+        print("Annulée.")
+        safe_input("\nAppuyez sur Entrée pour revenir au menu...")
         return
 
     for f in fichiers:
         if os.path.exists(f):
             os.remove(f)
-            print(f"\n\033[1;31m[SUPPRIMÃ‰]\033[0m {f}")
+            print(f"\n\033[1;31m[SUPPRIMÉ]\033[0m {f}")
 
-    log_action("supprimÃ©", username)
-    safe_input("\nAppuyez sur EntrÃ©e pour revenir au menu...")
+    log_action("supprimé", username)
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
 def lister_comptes():
     clear()
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
 
-    titre_section("COMPTES ENREGISTRÃ‰S")
+    titre_section("COMPTES ENREGISTRÉS")
 
     if not fichiers:
-        print("\nAucun profil enregistrÃ©.")
+        print("\nAucun profil enregistré.")
     else:
         for f in fichiers:
             print(" -", f.replace('.json', ''))
 
-    safe_input("\nAppuyez sur EntrÃ©e pour revenir au menu...")
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 
 def nettoyer_sessions_orphelines():
     clear()
@@ -272,23 +282,23 @@ def nettoyer_sessions_orphelines():
     configs = [f.replace('.json', '') for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
     sessions = [f for f in os.listdir(SESSION_DIR) if f.endswith('_session.json')]
 
-    supprimÃ©s = 0
+    supprimés = 0
     for session_file in sessions:
         username = session_file.replace('_session.json', '')
         if username not in configs:
             try:
                 os.remove(os.path.join(SESSION_DIR, session_file))
-                print(f"\n\033[1;33m[SUPPRIMÃ‰]\033[0m {session_file}")
-                supprimÃ©s += 1
+                print(f"\n\033[1;33m[SUPPRIMÉ]\033[0m {session_file}")
+                supprimés += 1
             except Exception as e:
                 erreur(f"\nErreur suppression {session_file}: {e}")
 
-    if supprimÃ©s:
-        info(f"{supprimÃ©s} session(s) supprimÃ©e(s).")
+    if supprimés:
+        info(f"{supprimés} session(s) supprimée(s).")
     else:
         info("\nAucune session orpheline.")
 
-    safe_input("\nAppuyez sur EntrÃ©e pour revenir au menu...")
+    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 def reconnexion_compte():
     clear()
     titre_section("RECONNECTION DU COMPTE")
@@ -299,7 +309,7 @@ def reconnexion_compte():
     try:
         subprocess.run(["python3", session_creator_path], check=True)
     except subprocess.CalledProcessError as e:
-        erreur(f"Erreur lors de l'exÃ©cution de session_creator.py : {e}")
+        erreur(f"Erreur lors de l'exécution de session_creator.py : {e}")
 def menu():
     while True:
         clear()
@@ -325,11 +335,11 @@ def menu():
             reconnexion_compte()
         elif choix == "0":
             clear()
-            print("Ã€ bientÃ´t !")
+            print("A bientôt !")
             break
         else:
             erreur("Choix invalide.")
-            safe_input("\nAppuyez sur EntrÃ©e pour rÃ©essayer...")
+            safe_input("\nAppuyez sur Entrée pour réessayer...")
 
 if __name__ == "__main__":
     menu()
