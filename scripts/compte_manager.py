@@ -254,6 +254,7 @@ def nettoyer_sessions_orphelines():
 
     safe_input("\nAppuyez sur Entrée pour revenir au menu...")
 def reconnexion_compte():
+    clear()
     session_creator_path = os.path.join(SCRIPT_DIR, "session_creator.py")
     if not os.path.exists(session_creator_path):
         erreur("Le fichier session_creator.py est introuvable.")
