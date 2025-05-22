@@ -76,6 +76,17 @@ def get_prop(prop):
 
 def generate_mid():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=24))
+def refresh_rate():
+    try:
+        dumpsys_display = subprocess.check_output(["dumpsys", "display"]).decode()
+        match = re.search(r'(?i)RefreshRate:\s*([\d.]+)', dumpsys_display)
+        if not match:
+            match = re.search(r'(?i)mode\s+\d+:\s+\d+x\d+\s+@\s+([\d.]+)Hz', dumpsys_display)
+        if match:
+            return f"{float(match.group(1)):.0f}Hz"
+    except Exception as e:
+        print(f"Erreur détection refresh rate : {e}")
+    return "60Hz"  # valeur par défaut
 
 def get_android_device_info():
     try:
@@ -132,9 +143,10 @@ def get_android_device_info():
         "device": get_prop("ro.product.device"),
         "android_version": int(get_prop("ro.build.version.sdk") or 33),
         "android_release": get_prop("ro.build.version.release"),
+        "android_version_code": version_code,
         "dpi": dpi,
         "resolution": resolution,
-        "refresh_rate": "60.0",
+        "refresh_rate": refresh_rate(),
         "cpu": get_prop("ro.product.board"),
         "board": get_prop("ro.product.board"),
         "bootloader": get_prop("ro.bootloader") or "unknown",
@@ -144,7 +156,8 @@ def get_android_device_info():
         "radio_version": get_prop("gsm.version.baseband"),
         "build_id": get_prop("ro.build.display.id"),
         "build_tags": get_prop("ro.build.tags"),
-        "build_type": get_prop("ro.build.type")
+        "build_type": get_prop("ro.build.type"),
+        "lang": locale.getdefaultlocale()[0] or "fr_FR"
     }
     user_agent = (
             f"Instagram {app_version} Android ({android_version}/{android_release}; "
