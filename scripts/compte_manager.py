@@ -256,7 +256,7 @@ def nettoyer_sessions_orphelines():
 def reconnexion_compte():
     clear()
     titre_section("RECONNECTION DU COMPTE")
-    subprocess.run(["python3", "autre_script.py"], check=True)
+    subprocess.run(["python3", "session_creator.py"], check=True)
 
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
     if not fichiers:
