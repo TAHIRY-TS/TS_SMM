@@ -9,7 +9,6 @@ import subprocess
 import re
 import random
 import string
-import locale
 from datetime import datetime, timezone
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -24,43 +23,10 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 open(LOG_FILE, 'a').close()
 os.chmod(LOG_FILE, 0o600)
 
-
 app_version = "269.0.0.18.75"
-def get_chipset():
-    try:
-        props = subprocess.check_output(['getprop']).decode()
-        chipset = "Inconnu"
 
-        # Recherche du chipset dans les propriétés système
-        for line in props.splitlines():
-            if any(keyword in line for keyword in ["ro.board.platform", "ro.hardware", "ro.mediatek.platform", "ro.chipname"]):
-                parts = line.split(":")
-                if len(parts) == 2:
-                    value = parts[1].strip().strip("[]")
-                    if value:
-                        chipset = value
-                        break
-        return chipset
-    except Exception as e:
-        return f"Erreur: {str(e)}"
 def check_cmd(cmd):
     return shutil.which(cmd) is not None
-
-def titre_section(titre):
-    if os.path.exists(LOGO_PATH):
-        subprocess.call(['bash', LOGO_PATH])
-    else:
-        print("\033[1;33m[AVERTISSEMENT]\033[0m Logo non trouvÃ©.")
-
-    titre_formate = f" {titre.upper()} "
-    largeur = 50
-    terminal_width = shutil.get_terminal_size().columns
-    padding = max((terminal_width - largeur) // 2, 0)
-    spaces = ' ' * padding
-
-    print(f"\n{spaces}\033[1;35mâ•”{'â•' * largeur}â•—\033[0m")
-    print(f"{spaces}\033[1;35mâ•‘{titre_formate.center(largeur)}â•‘\033[0m")
-    print(f"{spaces}\033[1;35mâ•š{'â•' * largeur}â•\033[0m\n")
 
 def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -73,7 +39,7 @@ def log_action(action, username):
         log.write(f"{horloge()} {action.upper()} - {username}\n")
 
 def success(msg):
-    print(f"\033[1;32m{horloge()} [SUCCÃˆS]\033[0m {msg}")
+    print(f"\033[1;32m{horloge()} [SUCCÈS]\033[0m {msg}")
 
 def erreur(msg):
     print(f"\033[1;31m{horloge()} [ERREUR]\033[0m {msg}")
@@ -88,11 +54,9 @@ def safe_input(prompt):
         return ''
 
 def get_prop(prop):
-    if not check_cmd('getprop'):
-        return ''
     try:
         return subprocess.check_output(['getprop', prop], encoding='utf-8').strip()
-    except Exception:
+    except:
         return ''
 
 def generate_mid():
@@ -106,31 +70,39 @@ def refresh_rate():
             match = re.search(r'(?i)mode\s+\d+:\s+\d+x\d+\s+@\s+([\d.]+)Hz', output)
         if match:
             return f"{float(match.group(1)):.0f}Hz"
-    except Exception as e:
-        print(f"Erreur détection refresh rate : {e}")
+    except:
+        pass
     return "60Hz"
 
-def lire_getprop(prop):
+def get_chipset():
     try:
-        return subprocess.check_output(["getprop", prop]).decode().strip()
+        props = subprocess.check_output(['getprop'], encoding='utf-8')
+        for line in props.splitlines():
+            if any(k in line for k in ["ro.board.platform", "ro.hardware", "ro.mediatek.platform", "ro.chipname"]):
+                value = line.split(":")[-1].strip().strip("[]")
+                if value:
+                    return value
     except:
-        return None
+        pass
+    return "Inconnu"
 
 def get_android_device_info():
     try:
-        dumpsys = subprocess.check_output(["dumpsys", "package", "com.instagram.android"]).decode()
+        dumpsys = subprocess.check_output(["dumpsys", "package", "com.instagram.android"], encoding='utf-8')
         version_code_match = re.search(r'versionCode=(\d+)', dumpsys)
-        version_code = version_code_match.group(1)
+        version_code = version_code_match.group(1) if version_code_match else "999999"
+    except:
+        version_code = "999999"
 
     try:
         wm_size = subprocess.check_output(["wm", "size"], encoding='utf-8')
         wm_density = subprocess.check_output(["wm", "density"], encoding='utf-8')
-        resolution_match = re.search(r'Physical size: (\d+x\d+)', wm_size)
-        dpi_match = re.search(r'Physical density: (\d+)', wm_density)
-        resolution = resolution_match.group(1) 
-        dpi = f"{dpi_match.group(1)}dpi"
+        resolution = re.search(r'Physical size: (\d+x\d+)', wm_size).group(1)
+        dpi = f"{re.search(r'Physical density: (\d+)', wm_density).group(1)}dpi"
+    except:
+        resolution, dpi = "1080x2400", "420dpi"
 
-    timezone_offset = int(datetime.now(timezone.utc).astimezone().utcoffset().total_seconds())
+    tz_offset = int(datetime.now(timezone.utc).astimezone().utcoffset().total_seconds())
 
     uuids = {
         "phone_id": str(uuid.uuid4()),
@@ -190,26 +162,24 @@ def get_android_device_info():
         "country": get_prop("persist.sys.country") or get_prop("ro.product.locale.region") or "FR",
         "country_code": 261,
         "locale": get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}" or "fr_FR",
-        "timezone_offset": timezone_offset
+        "timezone_offset": tz_offset
     }
 
 def creer_config():
     clear()
-    titre_section("AJOUTER UN COMPTE")
-
-    username = safe_input("\nNom d'utilisateur Instagram: ").strip()
+    print("\n--- AJOUTER UN COMPTE ---\n")
+    username = safe_input("Nom d'utilisateur Instagram: ").strip()
     password = safe_input("Mot de passe: ").strip()
 
     if not username or not password:
-        erreur("\nChamps obligatoires vides.")
-        safe_input("\nAppuyez sur Entrée pour continuer...")
+        erreur("Champs obligatoires vides.")
+        safe_input("\nAppuyez sur Entrée...")
         return
 
     filepath = os.path.join(CONFIG_DIR, f"{username}.json")
-
     if os.path.exists(filepath):
-        erreur("\nCe compte existe déjà .")
-        safe_input("\nAppuyez sur Entrée pour continuer...")
+        erreur("Ce compte existe déjà.")
+        safe_input("\nAppuyez sur Entrée...")
         return
 
     info_data = get_android_device_info()
@@ -232,9 +202,33 @@ def creer_config():
     with open(filepath, 'w') as f:
         json.dump(profile, f, indent=4)
 
-    success(f"\nProfil enregistré pour {username}.")
+    success(f"Profil enregistré pour {username}.")
     log_action("crée", username)
-    safe_input("\nAppuyez sur Entrée pour revenir au menu...")
+    safe_input("\nAppuyez sur Entrée...")
+
+def supprimer_compte():
+    clear()
+    print("\n--- SUPPRIMER UN COMPTE ---\n")
+    username = safe_input("Nom d'utilisateur à supprimer: ").strip()
+
+    fichiers = [
+        os.path.join(CONFIG_DIR, f"{username}.json"),
+        os.path.join(SESSION_DIR, f"{username}_session.json")
+    ]
+
+    confirm = safe_input(f"\nConfirmer suppression de {username} ? (o/n): ").lower()
+    if confirm != 'o':
+        print("Annulé.")
+        safe_input("\nAppuyez sur Entrée...")
+        return
+
+    for f in fichiers:
+        if os.path.exists(f):
+            os.remove(f)
+            print(f"\n\033[1;31m[SUPPRIMÉ]\033[0m {f}")
+
+    log_action("supprimé", username)
+    safe_input("\nAppuyez sur Entrée...")
 
 def supprimer_compte():
     clear()
