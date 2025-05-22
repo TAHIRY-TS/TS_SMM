@@ -1,5 +1,4 @@
 import os
-import re
 import json
 import random
 import time
@@ -32,8 +31,7 @@ def save_session(path, settings):
         json.dump(settings, f)
 
 def sanitize_user_agent(agent):
-    # À améliorer selon tes besoins : ici, on retourne simplement l’agent brut
-    return agent
+    return agent  # À personnaliser si besoin
 
 def try_login(data, session_file):
     try:
@@ -61,13 +59,7 @@ def try_login(data, session_file):
         print(f"{R}[✗] Erreur inattendue : {e}{W}")
         return None
 
-def load_random_session():
-    files = get_profiles()
-    if not files:
-        print(f"{R}[!] Aucun profil JSON trouvé dans {CONFIG_DIR}{W}")
-        return None
-
-    profile = random.choice(files)
+def process_profile(profile):
     json_path = os.path.join(CONFIG_DIR, profile)
     session_path = json_path.replace('.json', '.session')
 
@@ -75,10 +67,10 @@ def load_random_session():
         data = load_profile(json_path)
     except (FileNotFoundError, ValueError) as e:
         print(f"{R}[✗] {e}{W}")
-        return None
+        return
 
     username = data['username']
-    print(f"{Y}[*] Tentative de chargement du profil : {username}...{W}")
+    print(f"{Y}[*] Traitement du profil : {username}{W}")
     time.sleep(2)
 
     if os.path.exists(session_path):
@@ -88,27 +80,24 @@ def load_random_session():
             api = Client(username, data['password'], settings=session)
             api.current_user()
             print(f"{C}[•] Session valide : {username}{W}")
-            return api
+            return
         except Exception:
             print(f"{Y}[!] Session expirée ou corrompue : {username}{W}")
             os.remove(session_path)
 
     print(f"{B}[*] Reconnexion à {username}...{W}")
-    return try_login(data, session_path)
-
-if __name__ == '__main__':
-    print(f"{C}--- Chargement d'une session Instagram aléatoire ---{W}")
-    api = load_random_session()
-
+    api = try_login(data, session_path)
     if api:
         me = api.current_user()
         print(f"{G}[✓] Utilisateur connecté : @{me['user']['username']}{W}")
-    else:
-        print(f"{R}[!] Aucun compte n'a pu être connecté.{W}")
         time.sleep(2)
 
-    try:
-        input(f"\n{Y}Appuie sur Entrée pour revenir au menu...{W}")
-    except (KeyboardInterrupt, EOFError):
-        print(f"\n{R}Fermeture manuelle détectée.{W}")
-        time.sleep(2)
+if __name__ == '__main__':
+    print(f"{C}--- Traitement aléatoire de tous les profils ---{W}")
+    profiles = get_profiles()
+    random.shuffle(profiles)
+
+    for profile in profiles:
+        process_profile(profile)
+
+    print(f"{G}\n[✓] Tous les profils ont été traités.{W}")
