@@ -217,6 +217,31 @@ def creer_config():
 
     with open(filepath, 'w') as f:
         json.dump(profile, f, indent=4)
+    # Appeler le script Bash
+try:
+    result = subprocess.run([bash_script_path], capture_output=True, text=True, check=True)
+    output_lines = result.stdout.strip().splitlines()
+
+    # Dernière ligne = user-agent
+    user_agent = output_lines[-1]
+    print(f"[+] User-Agent capturé :\n{user_agent}")
+
+    # Charger et mettre à jour le fichier JSON
+    if os.path.exists(json_path):
+        with open(json_path, "r") as f:
+            data = json.load(f)
+
+        data["user_agent"] = user_agent
+
+        with open(json_path, "w") as f:
+            json.dump(data, f, indent=4)
+
+        print(f"[+] Fichier mis à jour avec succès : {json_path}")
+    else:
+        print(f"[!] Fichier JSON introuvable : {json_path}")
+
+except subprocess.CalledProcessError as e:
+    print(f"[!] Erreur lors de l'exécution du script Bash :\n{e.stderr}")
 
     success(f"Profil enregistré pour {username}.")
     log_action("crée", username)
