@@ -57,7 +57,7 @@ def load_random_session():
     username = data['username']
 
     print(f"{Y}[*] Tentative de chargement du profil : {username}...{W}")
-    time.sleep(3)  # Pause de 3 secondes
+    time.sleep(3)
 
     if os.path.exists(session_path):
         try:
@@ -83,6 +83,10 @@ if __name__ == '__main__':
         print(f"{G}[✓] Utilisateur connecté : @{me['user']['username']}{W}")
     else:
         print(f"{R}[!] Aucun compte n'a pu être connecté.{W}")
-        time.sleep(5)
+        time.sleep(2)
 
-    input(f"\n{Y}Appuie sur Entrée pour revenir au menu...{W}")
+    try:
+        input(f"\n{Y}Appuie sur Entrée pour revenir au menu...{W}")
+    except (KeyboardInterrupt, EOFError):
+        print(f"\n{R}Fermeture manuelle détectée.{W}")
+        time.sleep(2)
