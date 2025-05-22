@@ -102,20 +102,6 @@ def lire_getprop(prop):
     except:
         return None
 
-def detecter_langues_android():
-    langues = {
-        "Langue système": lire_getprop("persist.sys.locale") or lire_getprop("ro.product.locale"),
-        "Langue interface": lire_getprop("persist.sys.language"),
-        "Pays": lire_getprop("persist.sys.country"),
-        "Clavier actif": lire_getprop("secure.default_input_method")
-    }
-    return langues
-
-# Affichage
-infos = detecter_langues_android()
-for k, v in infos.items():
-    print(f"{k} : {v if v else 'Non détecté'}")
-
 def get_android_device_info():
     try:
         dumpsys = subprocess.check_output(["dumpsys", "package", "com.instagram.android"]).decode()
@@ -177,7 +163,7 @@ def get_android_device_info():
         "build_id": get_prop("ro.build.display.id"),
         "build_tags": get_prop("ro.build.tags"),
         "build_type": get_prop("ro.build.type"),
-        "lang": infos
+        "lang": get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}"
     }
 
     user_agent = (
