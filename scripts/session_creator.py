@@ -38,7 +38,7 @@ def log(message, level="info"):
 def load_profiles():
     profiles = []
     files = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
-    random.shuffle(files)  # Choix aléatoire
+    random.shuffle(files)
     for file in files:
         path = os.path.join(CONFIG_DIR, file)
         try:
@@ -76,6 +76,9 @@ def login_and_create_session(profile):
     uuids = profile.get("uuids", {})
     device = profile.get("device_settings", {})
     user_agent = profile.get("user_agent", "")
+    config = profile.get("config", {})
+    cookies = profile.get("cookies", {})
+    authorization = config.get("authorization_data", {})
 
     if not username or not password:
         log(f"[!] Profil invalide ({profile.get('__file__', 'inconnu')}) : username ou password manquant", level="fatal")
@@ -88,10 +91,18 @@ def login_and_create_session(profile):
         "advertising_id": uuids.get("advertising_id"),
         "android_device_id": uuids.get("android_device_id"),
         "device_settings": device,
-        "user_agent": user_agent
+        "user_agent": user_agent,
+        "cookies": cookies,
+        "last_login": profile.get("last_login"),
+        "config": {
+            "authorization_data": authorization,
+            "mid": config.get("mid"),
+            "ig_u_rur": config.get("ig_u_rur"),
+            "ig_www_claim": config.get("ig_www_claim"),
+        }
     }
 
-    log(f"[+] Tentative de connexion : {username}", level="info")
+    log(f"[+] Tentative de reconnexion avec paramètres enregistrés : {username}", level="info")
     try:
         api = Client(username, password, settings=settings)
         with open(session_file_path(username), "w") as f:
@@ -113,7 +124,7 @@ def main():
         api = use_existing_session(username)
         if not api:
             api = login_and_create_session(profile)
-        time.sleep(2)  # Pause de 2 secondes entre chaque compte
+        time.sleep(2)
     log("=== Fin du traitement des comptes ===\n", level="info")
 
 if __name__ == "__main__":
