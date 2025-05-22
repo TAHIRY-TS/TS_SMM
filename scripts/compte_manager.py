@@ -17,6 +17,7 @@ CONFIG_DIR = os.path.join(SCRIPT_DIR, 'config')
 SESSION_DIR = os.path.join(SCRIPT_DIR, 'sessions')
 LOG_FILE = os.path.join(SCRIPT_DIR, 'history.log')
 LOGO_PATH = os.path.join(PROJECT_DIR, 'assets/logo.sh')
+bash_script_path = "../main/user_agent.sh" 
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
