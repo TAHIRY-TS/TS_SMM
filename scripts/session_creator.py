@@ -27,14 +27,17 @@ def save_json(path, data):
         json.dump(data, f, indent=4)
 
 def load_session(username):
-    path = os.path.join(SESSION_DIR, f"ig_{username}.session")
+    path = os.path.join(SESSION_DIR, f"{username}.session")
     if os.path.exists(path):
         return load_json(path)
     return None
 
 def save_session(username, api):
-    session_path = os.path.join(SESSION_DIR, f"ig_{username}.session")
+    session_path = os.path.join(SESSION_DIR, f"{username}.session")
     session_data = {
+        "config": api.auth.settings["config"]
+        "uuids": api.auth.settings["uuids"]
+        "device_setting": api.auth.settings["device_settings"]
         "device_id": api.auth_settings["device_id"],
         "uuid": api.auth_settings["uuid"],
         "phone_id": api.auth_settings["phone_id"]
@@ -45,10 +48,13 @@ def save_session(username, api):
 def get_instagram_session(data):
     username = data.get("username")
     password = data.get("password")
-    auth = data.get("device_settings", {})
-    user_agent = data.get("user_agent", "Instagram 123.0.0.0")
+    uuids = data.get("uuids")
+    device_settings = data.get("device_settings")
+    config = data.get("config")
+    last_login = data.get("last_login")
+    user_agent = data.get("user_agent")
 
-    if not all([username, password, auth]):
+    if not all([username, password, device_settings]):
         print(f"{R}[!] Données incomplètes pour le compte : {username}{W}")
         return None
 
@@ -59,7 +65,10 @@ def get_instagram_session(data):
             print(f"{C}[•] Tentative de reconnexion via session pour @{username}...{W}")
             api = Client(
                 username, password,
-                user_agent=user_agent,
+                config=saved_session["config"],
+                uuids=saved_session["uuids"],
+                device_settings=saved_session["saved_session"],
+                user_agent=saved_session["user_agent"],
                 device_id=saved_session["device_id"],
                 guid=saved_session["uuid"],
                 phone_id=saved_session["phone_id"]
