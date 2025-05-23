@@ -66,7 +66,7 @@ def get_instagram_session(data):
 
 def get_all_accounts():
     blacklist = load_json(BLACKLIST_PATH)
-    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.startswith("user_") and f.endswith(".json")]
+    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
     comptes = []
     for f in fichiers:
         chemin = os.path.join(CONFIG_DIR, f)
