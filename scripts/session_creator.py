@@ -5,8 +5,12 @@ import time
 from instagram_private_api import Client, ClientError
 
 # Couleurs terminal
-R = '\033[91m'; G = '\033[92m'; Y = '\033[93m'
-B = '\033[94m'; C = '\033[96m'; W = '\033[0m'
+R = '\033[91m'
+G = '\033[92m'
+Y = '\033[93m'
+B = '\033[94m'
+C = '\033[96m'
+W = '\033[0m'
 
 # Dossiers
 BASE = os.path.abspath(os.path.dirname(__file__))
