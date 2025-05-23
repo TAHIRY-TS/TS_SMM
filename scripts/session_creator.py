@@ -11,8 +11,8 @@ C = '\033[96m'
 W = '\033[0m'
 
 # Dossiers
-BASE = os.path.abspath(os.path.dirname(__file__))
-CONFIG_DIR = os.path.join(BASE, 'config')
+BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+CONFIG_DIR = os.path.join(BASE, 'scripts', 'config')
 SESSION_DIR = CONFIG_DIR
 BLACKLIST_PATH = os.path.join(BASE, 'blacklist.json')
 TASK_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
