@@ -12,8 +12,8 @@ W = '\033[0m'
 # Dossiers
 BASE = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DIR = os.path.join(BASE, 'config')
-SESSION_DIR = os.path.join(BASE, 'sessions')
-BLACKLIST_PATH = os.path.join(CONFIG_DIR, 'blacklist.json')
+SESSION_DIR = os.path.join(BASE, 'config')
+BLACKLIST_PATH = os.path.join(BASE, 'blacklist.json')
 os.makedirs(SESSION_DIR, exist_ok=True)
 
 def load_json(path):
