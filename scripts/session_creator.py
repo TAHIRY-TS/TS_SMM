@@ -2,7 +2,8 @@ import os
 import json
 import time
 from instagram_private_api import Client, ClientError
-import requests  # pour envoyer les notifications Telegram
+from telethon.sync import TelegramClient
+from telethon.errors import SessionPasswordNeededError
 
 # Couleurs
 G = '\033[92m'
@@ -13,7 +14,7 @@ W = '\033[0m'
 
 BASE = os.path.abspath(os.path.dirname(__file__))
 CONFIG_PATH = os.path.join(BASE, 'config', 'user.json')
-BOT_TOKEN_PATH = os.path.join(BASE, 'config', 'bot_token.json')
+
 
 def load_json(path):
     with open(path, 'r') as f:
@@ -21,14 +22,18 @@ def load_json(path):
 
 def send_telegram_message(text):
     try:
-        data = load_json(BOT_TOKEN_PATH)
-        token = data["bot_token"]
-        chat_id = data["chat_id"]
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        requests.post(url, data={"chat_id": chat_id, "text": text})
-    except Exception as e:
-        print(f"{R}Erreur Telegram: {e}{W}")
+        tg_data = load_json(os.path.join(BASE, 'config.json'))
+        client = TelegramClient(tg_data["session_name"], tg_data["api_id"], tg_data["api_hash"])
+ 
+               client.start()  # Demande ton numéro et code à la première exécution
 
+        with client:
+            client.send_message('me', text)  # Message à toi-même (tu peux changer pour un @pseudo)
+            print(f"{C}[Telegram] Notification envoyée !{W}")
+    except SessionPasswordNeededError:
+        print(f"{R}Erreur : Mot de passe 2FA requis dans Telegram.{W}")
+    except Exception as e:
+        print(f"{R}Erreur Telethon : {e}{W}")
 def connect_with_auth_data(data):
     try:
         auth = data["authorization_data"]
