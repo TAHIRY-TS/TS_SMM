@@ -15,7 +15,6 @@ BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 CONFIG_DIR = os.path.join(BASE, 'scripts', 'config')
 SESSION_DIR = CONFIG_DIR
 BLACKLIST_PATH = os.path.join(BASE, 'blacklist.json')
-TASK_PATH = os.path.join(CONFIG_DIR, 'task_data.txt')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 
 os.makedirs(SESSION_DIR, exist_ok=True)
@@ -136,13 +135,6 @@ def effectuer_suivi(api, user_id):
     except Exception as e:
         print(f"{R}[✗] Erreur lors du FOLLOW : {e}{W}")
 
-def lire_tache():
-    if os.path.exists(TASK_PATH):
-        with open(TASK_PATH, 'r') as f:
-            return f.read().strip()
-    print(f"{R}[!] Fichier de tâche non trouvé : {TASK_PATH}{W}")
-    return None
-
 if __name__ == "__main__":
     print(f"{C}--- Création/Reconnexion de sessions Instagram ---{W}")
     comptes, blacklist = get_all_accounts()
@@ -151,8 +143,9 @@ if __name__ == "__main__":
         print(f"{R}[!] Aucun compte valide trouvé dans config/.{W}")
         exit()
 
-    lien = lire_tache()
+    lien = input(f"{Y}Entrez le lien du profil à suivre : {W}").strip()
     if not lien:
+        print(f"{R}[!] Aucun lien fourni. Opération annulée.{W}")
         exit()
 
     for compte in comptes:
@@ -169,6 +162,6 @@ if __name__ == "__main__":
         if user_id:
             effectuer_suivi(api, user_id)
             save_json(SELECTED_USER_PATH, compte)
-            break  # Exécute l'action avec un seul compte
+            break  # Utiliser un seul compte
 
     print(f"{Y}--- Fin de traitement.{W}")
