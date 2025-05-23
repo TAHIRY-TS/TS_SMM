@@ -67,7 +67,7 @@ def get_instagram_session(data):
                 username, password,
                 config=saved_session["config"],
                 uuids=saved_session["uuids"],
-                device_settings=saved_session["saved_session"],
+                device_settings=saved_session["device_settings"],
                 user_agent=saved_session["user_agent"],
                 device_id=saved_session["device_id"],
                 guid=saved_session["uuid"],
@@ -85,7 +85,10 @@ def get_instagram_session(data):
         print(f"{C}[•] Connexion classique en cours pour @{username}...{W}")
         api = Client(
             username, password,
-            user_agent=user_agent,
+            config=auth["config"],
+            uuids=ids_auth["uuids"],
+            device_settings=setting_auth["device_settings"],
+            user_agent=agent_auth["user_agent"],
             device_id=auth["device_id"],
             guid=auth["uuid"],
             phone_id=auth["phone_id"]
