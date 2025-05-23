@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 from instagram_private_api import Client, ClientError, ClientLoginError
 
 # Couleurs terminal
@@ -12,10 +13,16 @@ W = '\033[0m'
 # Dossiers
 BASE = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DIR = os.path.join(BASE, 'config')
-SESSION_DIR = os.path.join(BASE, 'config')
+SESSION_DIR = CONFIG_DIR
 BLACKLIST_PATH = os.path.join(BASE, 'blacklist.json')
 os.makedirs(SESSION_DIR, exist_ok=True)
 
+# Logger stylisé avec heure
+def log(msg, color=W):
+    now = datetime.now().strftime("%H:%M:%S")
+    print(f"{color}[{now}] {msg}{W}")
+
+# JSON utils
 def load_json(path):
     if os.path.exists(path):
         with open(path, 'r') as f:
@@ -26,26 +33,29 @@ def save_json(path, data):
     with open(path, 'w') as f:
         json.dump(data, f, indent=4)
 
+# Charger une session existante
 def load_session(username):
     path = os.path.join(SESSION_DIR, f"{username}.session")
     if os.path.exists(path):
         return load_json(path)
     return None
 
+# Sauvegarder une session
 def save_session(username, api):
     session_path = os.path.join(SESSION_DIR, f"{username}.session")
     session_data = {
         "config": api.auth.settings.get("config"),
         "uuids": api.auth.settings.get("uuids"),
         "device_settings": api.auth.settings.get("device_settings"),
-        "device_id": api.auth_settings.get("device_id"),
-        "uuid": api.auth_settings.get("uuid"),
-        "phone_id": api.auth_settings.get("phone_id"),
-        "user_agent": api.auth_settings.get("user_agent")
+        "device_id": api.auth.settings.get("device_id"),
+        "uuid": api.auth.settings.get("uuid"),
+        "phone_id": api.auth.settings.get("phone_id"),
+        "user_agent": api.auth.settings.get("user_agent")
     }
     save_json(session_path, session_data)
-    print(f"{Y}[•] Session sauvegardée : {session_path}{W}")
+    log(f"Session sauvegardée : {session_path}", Y)
 
+# Connexion Instagram
 def get_instagram_session(data):
     username = data.get("username")
     password = data.get("password")
@@ -58,14 +68,14 @@ def get_instagram_session(data):
     phone_id = uuids.get("phone_id", None)
 
     if not all([username, password, device_settings, uuids]):
-        print(f"{R}[!] Données incomplètes pour le compte : {username}{W}")
+        log(f"Données incomplètes pour le compte : {username}", R)
         return None
 
-    # 1. Reconnexion via session existante
+    # Tentative de reconnexion via session
     saved_session = load_session(username)
     if saved_session:
         try:
-            print(f"{C}[•] Tentative de reconnexion via session pour @{username}...{W}")
+            log(f"Tentative de reconnexion via session pour @{username}...", C)
             api = Client(
                 username, password,
                 config=saved_session["config"],
@@ -77,15 +87,14 @@ def get_instagram_session(data):
                 phone_id=saved_session["phone_id"]
             )
             api.current_user()
-            print(f"{G}[✓] Reconnexion réussie via session : @{username}{W}")
+            log(f"Reconnexion réussie via session : @{username}", G)
             return api
         except Exception as e:
-            print(f"{R}[✗] Session invalide ou expirée pour @{username} : {e}{W}")
-            # On retente la connexion classique ci-dessous
+            log(f"Session invalide pour @{username} : {e}", R)
 
-    # 2. Connexion normale
+    # Connexion normale
     try:
-        print(f"{C}[•] Connexion classique en cours pour @{username}...{W}")
+        log(f"Connexion classique en cours pour @{username}...", C)
         api = Client(
             username, password,
             config=config,
@@ -97,14 +106,14 @@ def get_instagram_session(data):
             phone_id=phone_id
         )
         api.current_user()
-        print(f"{G}[✓] Connexion réussie : @{username}{W}")
+        log(f"Connexion réussie : @{username}", G)
         save_session(username, api)
         return api
-
     except (ClientLoginError, ClientError) as e:
-        print(f"{R}[✗] Erreur de connexion pour @{username} : {e}{W}")
+        log(f"Erreur de connexion pour @{username} : {e}", R)
         return None
 
+# Obtenir tous les comptes sauf blacklist
 def get_all_accounts():
     blacklist = load_json(BLACKLIST_PATH)
     if not isinstance(blacklist, list):
@@ -119,22 +128,23 @@ def get_all_accounts():
             comptes.append(data)
     return comptes, blacklist
 
+# Main
 if __name__ == "__main__":
-    print(f"{C}--- Création/Reconnexion de sessions Instagram ---{W}")
+    log("--- Création/Reconnexion de sessions Instagram ---", C)
     comptes, blacklist = get_all_accounts()
 
     if not comptes:
-        print(f"{R}[!] Aucun compte valide trouvé dans config/.{W}")
+        log("Aucun compte valide trouvé dans config/.", R)
         exit()
 
     for compte in comptes:
         username = compte.get("username")
-        print(f"{C}>>> Traitement de : @{username}{W}")
+        log(f">>> Traitement de : @{username}", C)
         api = get_instagram_session(compte)
         if not api:
             if username not in blacklist:
                 blacklist.append(username)
-                print(f"{R}Ajout de @{username} à la blacklist.{W}")
+                log(f"Ajout de @{username} à la blacklist.", R)
                 save_json(BLACKLIST_PATH, sorted(set(blacklist)))
 
-    print(f"{Y}--- Terminé. Sessions prêtes pour les comptes valides.{W}")
+    log("--- Terminé. Sessions prêtes pour les comptes valides. ---", Y)
