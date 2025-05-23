@@ -14,7 +14,6 @@ W = '\033[0m'
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 CONFIG_DIR = os.path.join(BASE, 'scripts', 'config')
 SESSION_DIR = CONFIG_DIR
-BLACKLIST_PATH = os.path.join(BASE, 'blacklist.json')
 SELECTED_USER_PATH = os.path.join(CONFIG_DIR, 'selected_user.json')
 
 os.makedirs(SESSION_DIR, exist_ok=True)
@@ -125,18 +124,14 @@ def get_instagram_session(data):
     return None
 
 def get_all_accounts():
-    blacklist = load_json(BLACKLIST_PATH)
-    if not isinstance(blacklist, list):
-        blacklist = []
-
-    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json") and f != "blacklist.json"]
+    fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json") and f != "selected_user.json"]
     comptes = []
     for f in fichiers:
         chemin = os.path.join(CONFIG_DIR, f)
         data = load_json(chemin)
-        if data.get("username") and data.get("username") not in blacklist:
+        if data.get("username"):
             comptes.append(data)
-    return comptes, blacklist
+    return comptes
 
 def extraire_user_id_depuis_lien(api, lien):
     try:
@@ -157,7 +152,7 @@ def effectuer_suivi(api, user_id):
 
 if __name__ == "__main__":
     print(f"{C}--- Création/Reconnexion de sessions Instagram ---{W}")
-    comptes, blacklist = get_all_accounts()
+    comptes = get_all_accounts()
 
     if not comptes:
         print(f"{R}[!] Aucun compte valide trouvé dans config/.{W}")
@@ -173,9 +168,6 @@ if __name__ == "__main__":
         print(f"{C}>>> Traitement de : @{username}{W}")
         api = get_instagram_session(compte)
         if not api:
-            if username not in blacklist:
-                blacklist.append(username)
-                save_json(BLACKLIST_PATH, sorted(set(blacklist)))
             continue
 
         user_id = extraire_user_id_depuis_lien(api, lien)
