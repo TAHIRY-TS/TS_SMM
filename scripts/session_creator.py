@@ -34,18 +34,6 @@ def save_session(path, settings):
     with open(path, 'w') as f:
         json.dump(settings, f)
 
-def sanitize_user_agent(agent):
-    ua_path = os.path.expanduser('~/user_agent.txt')
-    if os.path.exists(ua_path):
-        try:
-            with open(ua_path, 'r') as f:
-                agent = f.read().strip()
-                print(f"{C}[•] User-Agent chargé depuis Termux :{W} {agent}")
-        except Exception as e:
-            print(f"{R}[!] Erreur lecture user_agent.txt : {e}{W}")
-    else:
-        print(f"{Y}[!] Aucun fichier user_agent.txt trouvé, valeur par défaut utilisée.{W}")
-    return agent
 def try_login(data, session_file):
     try:
         device = data.get('device_settings', {})
@@ -84,7 +72,7 @@ def process_profile(profile):
 
     username = data['username']
     print(f"{Y}[*] Traitement du profil : {username}{W}")
-    time.sleep(2)
+    time.sleep(4)
 
     if os.path.exists(session_path):
         try:
