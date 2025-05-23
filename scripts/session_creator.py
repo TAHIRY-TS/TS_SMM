@@ -1,104 +1,57 @@
 import os
 import json
-import random
 import time
 from instagram_private_api import Client, ClientError
+import requests  # pour envoyer les notifications Telegram
 
-# Couleurs terminal
-R = '\033[91m'
+# Couleurs
 G = '\033[92m'
+R = '\033[91m'
 Y = '\033[93m'
-B = '\033[94m'
 C = '\033[96m'
 W = '\033[0m'
 
-# Dossiers
 BASE = os.path.abspath(os.path.dirname(__file__))
-CONFIG_DIR = os.path.join(BASE, 'config')
+CONFIG_PATH = os.path.join(BASE, 'config', 'user.json')
+BOT_TOKEN_PATH = os.path.join(BASE, 'config', 'bot_token.json')
 
-def get_profiles():
-    return [f for f in os.listdir(CONFIG_DIR) if f.endswith('.json')]
+def load_json(path):
+    with open(path, 'r') as f:
+        return json.load(f)
 
-def load_profile(path):
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Fichier introuvable : {path}")
-    if os.path.getsize(path) == 0:
-        raise ValueError(f"Fichier vide : {path}")
+def send_telegram_message(text):
     try:
-        with open(path, 'r') as f:
-            return json.load(f)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Erreur de lecture JSON dans {path} : {e}")
+        data = load_json(BOT_TOKEN_PATH)
+        token = data["bot_token"]
+        chat_id = data["chat_id"]
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        requests.post(url, data={"chat_id": chat_id, "text": text})
+    except Exception as e:
+        print(f"{R}Erreur Telegram: {e}{W}")
 
-def save_session(path, settings):
-    with open(path, 'w') as f:
-        json.dump(settings, f)
-
-def try_login(data, session_file):
+def connect_with_auth_data(data):
     try:
-        device = data.get('device_settings', {})
-        uuids = data.get('uuids', {})
-        username = data.get('username')
-        password = data.get('password')
-        user_agent = sanitize_user_agent(data.get('user_agent', ''))
-
+        auth = data["authorization_data"]
         api = Client(
-            username, password,
-            device_id=uuids.get('android_device_id'),
-            guid=uuids.get('uuid'),
-            phone_id=uuids.get('phone_id'),
-            user_agent=user_agent,
-            device=device
+            data["username"], data["password"],
+            user_agent=data["user_agent"],
+            device_id=auth["device_id"],
+            guid=auth["uuid"],
+            phone_id=auth["phone_id"]
         )
-        save_session(session_file, api.settings)
-        print(f"{G}[✓] Connexion réussie : {username}{W}")
+        api.current_user()
+        print(f"{G}[✓] Session active : @{data['username']}{W}")
+        send_telegram_message(f"[IG] Session prête pour @{data['username']}")
         return api
     except ClientError as e:
-        print(f"{R}[✗] Erreur de connexion : {e}{W}")
+        print(f"{R}[✗] Connexion échouée : {e}{W}")
+        send_telegram_message(f"[IG] Erreur connexion @{data['username']}: {e}")
         return None
-    except Exception as e:
-        print(f"{R}[✗] Erreur inattendue : {e}{W}")
-        return None
-
-def process_profile(profile):
-    json_path = os.path.join(CONFIG_DIR, profile)
-    session_path = json_path.replace('.json', '.session')
-
-    try:
-        data = load_profile(json_path)
-    except (FileNotFoundError, ValueError) as e:
-        print(f"{R}[✗] {e}{W}")
-        return
-
-    username = data['username']
-    print(f"{Y}[*] Traitement du profil : {username}{W}")
-    time.sleep(4)
-
-    if os.path.exists(session_path):
-        try:
-            with open(session_path, 'r') as f:
-                session = json.load(f)
-            api = Client(username, data['password'], settings=session)
-            api.current_user()
-            print(f"{C}[•] Session valide : {username}{W}")
-            return
-        except Exception:
-            print(f"{Y}[!] Session expirée ou corrompue : {username}{W}")
-            os.remove(session_path)
-
-    print(f"{B}[*] Reconnexion à {username}...{W}")
-    api = try_login(data, session_path)
-    if api:
-        me = api.current_user()
-        print(f"{G}[✓] Utilisateur connecté : @{me['user']['username']}{W}")
-        time.sleep(2)
 
 if __name__ == '__main__':
-    print(f"{C}--- Traitement aléatoire de tous les profils ---{W}")
-    profiles = get_profiles()
-    random.shuffle(profiles)
-
-    for profile in profiles:
-        process_profile(profile)
-
-    print(f"{G}\n[✓] Tous les profils ont été traités.{W}")
+    print(f"{C}--- Connexion via authorization_data ---{W}")
+    data = load_json(CONFIG_PATH)
+    api = connect_with_auth_data(data)
+    if api:
+        # Ici, on ajoutera l'exécution automatique des tâches SMM
+        print(f"{Y}[!] Prêt à exécuter les tâches SMM pour @{data['username']}{W}")
