@@ -65,6 +65,17 @@ def get_instagram_session(data):
         return None
 
 def get_all_accounts():
+        blacklist = load_json(BLACKLIST_PATH)
+    if not isinstance(blacklist, list):
+        blacklist = []
+        for compte in comptes:
+    username = compte.get("username")
+    print(f"{C}>>> Traitement de : @{username}{W}")
+    api = get_instagram_session(compte)
+    if not api:
+        blacklist.append(username)
+        print(f"{R}Ajout de @{username} à la blacklist.{W}")
+        save_json(BLACKLIST_PATH, list(set(blackli
     blacklist = load_json(BLACKLIST_PATH)
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
     comptes = []
