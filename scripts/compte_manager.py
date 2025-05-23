@@ -167,7 +167,11 @@ def get_android_device_info():
         "build_type": get_prop("ro.build.type"),
         "lang": normalize_locale(get_prop("persist.sys.locale") or f"{get_prop('persist.sys.language')}_{get_prop('persist.sys.country')}")   }
 
-    user_agent = (Instagram\s(?P<'app_version'>[^\s]+)\sAndroid\s\((?P<'android_version'>[0-9]+)/(?P<'android_release'>[0-9\.]+);\s(?P<'dpi'>\d+dpi);\s(?P<'resolution'>\d+x\d+);\s(?P<'manufacturer'>[^;]+);\s(?P<'device'>[^;]+);\s(?P<'model'>[^;]+);\s(?P<'chipset'>[^;]+);\s[us]+_[US]+;\s(?P<'version_code'>\d+)
+    user_agent = (
+        f"Instagram {app_version} Android ({device_settings['android_version']}/{device_settings['android_release']}; "
+        f"{device_settings['dpi']}; {device_settings['resolution']}; {device_settings['manufacturer']}; {device_settings['device']}; {device_settings['model']}; "
+        f"{device_settings['chipset']}; us_US; 314665256)"
+    )
 
     return {
         "uuids": uuids,
