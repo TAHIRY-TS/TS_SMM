@@ -94,15 +94,35 @@ def get_instagram_session(data):
             user_agent=user_agent,
             device_id=device_id,
             guid=guid,
-            phone_id=phone_id
+            phone_id=phone_id,
+            authenticate=False
         )
+
+        api.pre_login_flow()
+        api.login()
+        api.post_login_flow()
+
         api.current_user()
         print(f"{G}[✓] Connexion réussie : @{username}{W}")
         save_session(username, api)
         return api
-    except (ClientLoginError, ClientError) as e:
-        print(f"{R}[✗] Erreur de connexion @{username} : {e}{W}")
-        return None
+
+    except ClientLoginError as e:
+        print(f"{R}[✗] Erreur de login @{username} : {e}{W}")
+    except ClientError as e:
+        if 'challenge_required' in str(e).lower():
+            print(f"{R}[!] Vérification requise pour @{username} (challenge_required).{W}")
+        elif 'checkpoint_required' in str(e).lower():
+            print(f"{R}[!] Checkpoint Instagram requis pour @{username}.{W}")
+        elif e.code == 403:
+            print(f"{R}[!] Erreur 403 (interdit). Blocage possible pour @{username}.{W}")
+        elif e.code == 400:
+            print(f"{R}[!] Erreur 400 (mauvaise requête). @{username} peut être mal configuré.{W}")
+        else:
+            print(f"{R}[✗] Erreur API : {e}{W}")
+    except Exception as e:
+        print(f"{R}[✗] Erreur inconnue @{username} : {e}{W}")
+    return None
 
 def get_all_accounts():
     blacklist = load_json(BLACKLIST_PATH)
