@@ -35,9 +35,9 @@ def load_session(username):
 def save_session(username, api):
     session_path = os.path.join(SESSION_DIR, f"{username}.session")
     session_data = {
-        "config": api.auth.settings["config"]
-        "uuids": api.auth.settings["uuids"]
-        "device_setting": api.auth.settings["device_settings"]
+        "config": api.auth.settings["config"],
+        "uuids": api.auth.settings["uuids"],
+        "device_setting": api.auth.settings["device_settings"],
         "device_id": api.auth_settings["device_id"],
         "uuid": api.auth_settings["uuid"],
         "phone_id": api.auth_settings["phone_id"]
