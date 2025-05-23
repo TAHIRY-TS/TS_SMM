@@ -45,7 +45,7 @@ def save_session(username, api):
 def get_instagram_session(data):
     username = data.get("username")
     password = data.get("password")
-    auth = data.get("authorization_data", {})
+    auth = data.get("device_settings", {})
     user_agent = data.get("user_agent", "Instagram 123.0.0.0")
 
     if not all([username, password, auth]):
