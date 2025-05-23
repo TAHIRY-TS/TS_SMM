@@ -170,7 +170,7 @@ def get_android_device_info():
     user_agent = (
         f"Instagram {app_version} Android ({device_settings['android_version']}/{device_settings['android_release']}; "
         f"{device_settings['dpi']}; {device_settings['resolution']}; {device_settings['manufacturer']}; {device_settings['device']}; {device_settings['model']}; "
-        f"{device_settings['chipset']}; us_US; 314665256)"
+        f"{device_settings['chipset']}; {device_settings['build_id']}; {device_settings['build_type']}; {device_settings['radio_version']}; us_US; 314665256)"
     )
 
     return {
