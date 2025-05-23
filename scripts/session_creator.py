@@ -3,13 +3,14 @@ import json
 import random
 from instagram_private_api import Client, ClientError, ClientLoginError
 
-# Couleurs
-G = '\033[92m'
-R = '\033[91m'
-Y = '\033[93m'
-C = '\033[96m'
-W = '\033[0m'
+# Couleurs terminal
+G = '\033[92m'  # Vert
+R = '\033[91m'  # Rouge
+Y = '\033[93m'  # Jaune
+C = '\033[96m'  # Cyan
+W = '\033[0m'   # Reset
 
+# Dossiers
 BASE = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DIR = os.path.join(BASE, 'config')
 SESSION_DIR = os.path.join(BASE, 'sessions')
@@ -26,84 +27,70 @@ def save_json(path, data):
     with open(path, 'w') as f:
         json.dump(data, f, indent=4)
 
-def get_instagram_api(data):
-    username = data["username"]
-    session_path = os.path.join(SESSION_DIR, f"ig_{username}.session")
+def get_instagram_session(data):
+    username = data.get("username")
+    password = data.get("password")
+    auth = data.get("authorization_data", {})
+    user_agent = data.get("user_agent", "Instagram 123.0.0.0")
 
-    try:
-        if os.path.exists(session_path):
-            session_data = load_json(session_path)
-            api = Client(
-                username,
-                data["password"],
-                user_agent=data["user_agent"],
-                device_id=session_data["device_id"],
-                guid=session_data["uuid"],
-                phone_id=session_data["phone_id"]
-            )
-            print(f"{G}[✓] Session restaurée depuis .session pour @{username}{W}")
-        else:
-            auth = data["authorization_data"]
-            api = Client(
-                username,
-                data["password"],
-                user_agent=data["user_agent"],
-                device_id=auth["device_id"],
-                guid=auth["uuid"],
-                phone_id=auth["phone_id"]
-            )
-            session_auth = {
-                "device_id": api.auth_settings["device_id"],
-                "uuid": api.auth_settings["uuid"],
-                "phone_id": api.auth_settings["phone_id"]
-            }
-            save_json(session_path, session_auth)
-            print(f"{Y}[•] Session Instagram sauvegardée dans {session_path}{W}")
-
-        # Vérification
-        api.current_user()
-        return api
-
-    except (ClientError, ClientLoginError) as e:
-        print(f"{R}[✗] Connexion échouée pour @{username} : {e}{W}")
+    if not all([username, password, auth]):
+        print(f"{R}[!] Données incomplètes pour le compte : {username}{W}")
         return None
 
-def lister_comptes_valides():
+    try:
+        # Connexion
+        api = Client(
+            username, password,
+            user_agent=user_agent,
+            device_id=auth["device_id"],
+            guid=auth["uuid"],
+            phone_id=auth["phone_id"]
+        )
+        api.current_user()
+        print(f"{G}[✓] Connexion réussie : @{username}{W}")
+
+        # Sauvegarde session
+        session_path = os.path.join(SESSION_DIR, f"ig_{username}.session")
+        session_data = {
+            "device_id": api.auth_settings["device_id"],
+            "uuid": api.auth_settings["uuid"],
+            "phone_id": api.auth_settings["phone_id"]
+        }
+        save_json(session_path, session_data)
+        print(f"{Y}[•] Session sauvegardée : {session_path}{W}")
+        return api
+
+    except (ClientLoginError, ClientError) as e:
+        print(f"{R}[✗] Erreur connexion @{username} : {e}{W}")
+        return None
+
+def get_all_accounts():
     blacklist = load_json(BLACKLIST_PATH)
     fichiers = [f for f in os.listdir(CONFIG_DIR) if f.startswith("user_") and f.endswith(".json")]
     comptes = []
     for f in fichiers:
-        data = load_json(os.path.join(CONFIG_DIR, f))
-        username = data.get("username")
-        if username and username not in blacklist:
-            comptes.append(os.path.join(CONFIG_DIR, f))
+        chemin = os.path.join(CONFIG_DIR, f)
+        data = load_json(chemin)
+        if data.get("username") not in blacklist:
+            comptes.append(data)
     return comptes
 
-if __name__ == '__main__':
-    print(f"{C}--- Connexion Instagram via fichiers .session ---{W}")
-    comptes = lister_comptes_valides()
+if __name__ == "__main__":
+    print(f"{C}--- Création de sessions Instagram depuis config/ ---{W}")
+    comptes = get_all_accounts()
+    blacklist = load_json(BLACKLIST_PATH)
+
     if not comptes:
-        print(f"{R}[!] Aucun compte valide trouvé.{W}")
+        print(f"{R}[!] Aucun compte valide trouvé dans config/.{W}")
         exit()
 
-    blacklist = load_json(BLACKLIST_PATH)
-    success = 0
-    failed = 0
-
-    for chemin in comptes:
-        data = load_json(chemin)
-        username = data["username"]
-        print(f"{C}--- Tentative pour @{username} ---{W}")
-        api = get_instagram_api(data)
-        if api:
-            success += 1
-            print(f"{G}[✓] Succès : @{username}{W}")
-        else:
-            failed += 1
+    for compte in comptes:
+        username = compte.get("username")
+        print(f"{C}>>> Traitement de : @{username}{W}")
+        api = get_instagram_session(compte)
+        if not api:
             blacklist.append(username)
+            print(f"{R}Ajout de @{username} à la blacklist.{W}")
             save_json(BLACKLIST_PATH, list(set(blacklist)))
 
-    print(f"\n{Y}--- Résumé ---{W}")
-    print(f"{G}Comptes réussis : {success}{W}")
-    print(f"{R}Comptes échoués : {failed}{W}")
-    print(f"{C}Liste noire mise à jour dans blacklist.json{W}")
+    print(f"{Y}--- Terminé. Sessions créées pour comptes valides.{W}")
